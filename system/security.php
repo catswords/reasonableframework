@@ -2,6 +2,7 @@
 /**
  * @file security.php
  * @date 2018-05-27
+ * @updated [last commit date]
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief Security module for ReasonableFramework
  */
@@ -568,6 +569,12 @@ if(!check_function_exists("decapsulate_text")) {
 if(!check_function_exists("make_safe_argument")) {
 	function make_safe_argument($str) {
 		return addslashes($str);
+	}
+}
+
+if(!check_function_exists("make_safe_path")) {
+	function make_safe_path($path) {
+		return str_replace("../", "", $path);
 	}
 }
 
