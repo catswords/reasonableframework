@@ -2,20 +2,60 @@
 /**
  * @file index.php
  * @date 2018-05-27
+ * @updated 2019-06-04
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief ReasonableFramework
- * @cvs http://github.com/gnh1201/reasonableframework
+ * @cvs https://github.com/gnh1201/reasonableframework
+ * @sponsor https://patreon.com/catswords (Check this link if you want use the advanced security)
  */
 
 define("_DEF_VSPF_", true); // compatible to VSPF
 define("_DEF_RSF_", true); // compatible to RSF
 define("APP_DEVELOPMENT", false); // set the status of development
 define("DOC_EOL", "\r\n"); // set the 'end of line' commonly
+define("CORS_DOMAINS", false); // common security: allow origin domains (e.g. example.org,*.example.org)
+define("PHP_FIREWALL_REQUEST_URI", strip_tags($_SERVER['REQUEST_URI'])); // advanced security
+define("PHP_FIREWALL_ACTIVATION", false); // advanced security
+define("PHP_DDOS_PROTECTION", false); // advanced security
 
 // check if current status is development
 if(APP_DEVELOPMENT == true) {
     error_reporting(E_ALL);
-    ini_set("display_errors", 1);
+} else {
+    error_reporting(E_ERROR | E_PARSE);
+}
+ini_set("display_errors", 1);
+
+// CORS Security (https or http)
+if(CORS_DOMAINS !== false) {
+    $domains = explode(",", CORS_DOMAINS);
+    $_origin = array_key_exists("HTTP_ORIGIN", $_SERVER) ? $_SERVER['HTTP_ORIGIN'] : "";
+    $origins = array();
+    if(!in_array("*", $domains)) {
+        foreach($domains as $domain) {
+            if(!empty($domain)) {
+                if(substr($domain, 0, 2) == "*.") { // support wildcard
+                    $needle = substr($domain, 1);
+                    $length = strlen($needle);
+                    if(substr($_origin, -$length) === $needle) {
+                        $origins[] = $_origin;
+                    }
+                } else {
+                    $origins[] = sprintf("https://%s", $domain);
+                    $origins[] = sprintf("http://%s", $domain);
+                }
+            }
+        }
+        if(count($origins) > 0) {
+            if(in_array($_origin, $origins)) {
+                header(sprintf("Access-Control-Allow-Origin: %s", $_origin));
+            } else {
+                header(sprintf("Access-Control-Allow-Origin: %s", $origins[0])); 
+            }
+        }
+    } else {
+        header("Access-Control-Allow-Origin: *");
+    }
 }
 
 // set empty scope
@@ -61,6 +101,16 @@ write_visit_log();
 
 // get requested route
 $route = read_route();
+
+// advanced security: set PHP firewall
+if(PHP_FIREWALL_ACTIVATION !== false) {
+    loadHelper("php-firewall.lnk");
+}
+
+// advanced security: set DDOS protection
+IF(PHP_DDOS_PROTECTION !== false) {
+    loadHelper("php-ddos.lnk");
+}
 
 // load route file
 if(!loadRoute($route, $scope)) {

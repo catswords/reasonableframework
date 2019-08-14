@@ -73,6 +73,7 @@ if(!check_function_exists("read_requests")) {
             "_RAW"    => file_get_contents("php://input"),
             "_JSON"   => false,
             "_SEAL"   => false,
+            "_CSPT"   => false,
             "_SERVER" => array_map("make_safe_argument", get_array($_SERVER)),
         );
 
@@ -105,6 +106,13 @@ if(!check_function_exists("read_requests")) {
         if(array_key_equals("serialized", $options, true)) {
             $requests['_SEAL'] = unserialize($requests['_RAW']);
         }
+        
+        // check if cspt(catsplit) request
+        if(array_key_equals("catsplit", $options, true)) {
+            if(loadHelper("catsplit.format")) {
+                $requests['_CSPT'] = catsplit_decode($requests['_RAW']);
+            }
+        }
 
         // with security module
         $protect_methods = array("_ALL", "_GET", "_POST", "_JSON", "_SEAL", "_MIXED");
@@ -130,6 +138,7 @@ if(!check_function_exists("read_requests")) {
             "raw" => "_RAW",
             "json" => "_JSON",
             "seal" => "_SEAL",
+            "cspt" => "_CSPT",
         );
         foreach($aliases as $k=>$v) {
             $requests[$k] = $requests[$v];
@@ -329,9 +338,10 @@ if(!check_function_exists("set_header_content_type")) {
         $rules = array(
             "json" => "application/json",
             "xml" => "text/xml",
-            "text" => "text/plain",
+            "txt" => "text/plain",
             "html" => "text/html",
-            "xhtml" => "application/xhtml+xml"
+            "xhtml" => "application/xhtml+xml",
+            "cspt" => "application/catsplit",
         );
 
         if(array_key_exists($type, $rules)) {

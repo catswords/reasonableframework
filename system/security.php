@@ -5,12 +5,13 @@
  * @updated [last commit date]
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief Security module for ReasonableFramework
+ * @sponsor https://patreon.com/catswords (Check this link if you want use the advanced security)
  */
 
 if(!check_function_exists("check_token_abuse")) {
     function check_token_abuse($_p_token, $_n_token) {
         $abuse = false;
-        
+
         $_c_token = $_p_token . $_n_token;
         if(empty($_c_token) || $_p_token != $_n_token || strlen($_c_token) != (strlen($_p_token) + strlen($_n_token)) || !ctype_alnum($_c_token)) {
             $abuse = true;
@@ -69,7 +70,7 @@ if(!check_function_exists("get_session_token")) {
 if(!check_function_exists("check_token_abuse_by_requests")) {
     function check_token_abuse_by_requests($name, $method="_POST") {
         $requests = get_requests();
-        
+
         $flag = false;
         if(array_key_empty($name, $requests[$method])) {
             $flag = true;
@@ -254,7 +255,7 @@ if(!check_function_exists("get_hashed_text")) {
 if(!check_function_exists("get_salt")) {
     function get_salt() {
         $salt = "";
-        
+
         $config = get_config();
         if(!array_key_equals("saltdisabled", $config, 1)) {
             $salt = get_value_in_array("salt", $config, make_random_id(16));
@@ -276,7 +277,7 @@ if(!check_function_exists("check_match_password")) {
     function check_match_password($p, $n, $algo="sha1") {
         $flag = false;
         $salt = get_salt();
-        
+
         $n_plain_text = $n . $salt;
         $n_hashed_text = "";
 
@@ -306,7 +307,7 @@ if(!check_function_exists("session_logout")) {
         $config = get_config();
 
         $flag = false;
-        
+
         $ss_user_name = get_session("ss_user_name");
         $ss_key = get_session("ss_key");
 
@@ -496,7 +497,7 @@ if(!check_function_exists("encapsulate_text")) {
                 $encapsulated_text = get_hashed_text($encrypted_text, "base64");
             }
         }
-        
+ 
         return $encapsulated_text;
     }
 }
@@ -547,7 +548,7 @@ if(!check_function_exists("decapsulate_text")) {
 
 if(!check_function_exists("make_safe_argument")) {
     function make_safe_argument($str) {
-        return addslashes($str);
+        return is_string($str) ? addslashes($str) : $str;
     }
 }
 
@@ -622,7 +623,6 @@ if(!check_function_exists("check_redirect_origin")) {
         return $flag;
     }
 }
-
 
 // start session (enable $_SESSION)
 session_start();

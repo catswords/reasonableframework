@@ -88,53 +88,21 @@ if(!function_exists("compare_db_key_length")) {
 }
 
 if(!function_exists("get_db_binded_sql")) {
-    function get_db_binded_sql($sql, $bind) {
-        if(check_array_length($bind, 0) > 0) {
+    function get_db_binded_sql($sql, $bind=array()) {
+        if(is_array($bind) && check_array_length($bind, 0) > 0) {
             $bind_keys = array_keys($bind);
 
             // 2018-08-19: support lower php version (not supported anonymous function)
             usort($bind_keys, "compare_db_key_length");
 
+            // bind values
             foreach($bind_keys as $k) {
                 $sql = str_replace(":" . $k, "'" . addslashes($bind[$k]) . "'", $sql);
             }
         }
-
         return $sql;
     }
 }
-
-/*
-// todo: the new parameter binding method
-if(!check_function_exists("get_db_binded_param")) {
-    function get_db_binded_param($exp, $bind) {
-        foreach($bind as $k=>$v) {
-            if($exp == sprintf(":%s", $k)) {
-                $exp = make_safe_argument($v);
-                break;
-            }
-        }
-        
-        return $exp;
-    }
-}
-
-if(!check_function_exists("get_db_binded_sql")) {
-    function get_db_binded_sql($sql, $bind) {
-        $binded_sql = false;
-
-        if(loadHelper("string.utils")) {
-            $exps = multi_str_split($sql, array(" ", "=", ">", "<", "(", ")", "\r", "\n", "\t"));
-            foreach($exps as $k=>$v) {
-                $exps[$k] = get_db_binded_param($v, $bind);
-            }
-            $binded_sql = implode("", $exps);
-        }
-
-        return $binded_sql;
-    }
-}
-*/
 
 if(!check_function_exists("get_db_stmt")) {
     function get_db_stmt($sql, $bind=array(), $bind_pdo=false, $show_sql=false) {
@@ -251,9 +219,10 @@ if(!check_function_exists("exec_db_query")) {
 if(!check_function_exists("exec_db_fetch_all")) {
     function exec_db_fetch_all($sql, $bind=array(), $options=array()) {
         $response = array();
-        $length = 0;
+
         $is_not_countable = false;
-        
+        $_cnt = 0;
+
         $rows = array();
         $stmt = get_db_stmt($sql, $bind);
 
@@ -262,11 +231,13 @@ if(!check_function_exists("exec_db_fetch_all")) {
         }
 
         if(array_key_equals("do_count", $options, true)) {
-            $count_sql = sprintf("select count(*) as cnt from (%s) a", get_db_binded_sql($sql, $bind));
-            $count_data = exec_db_fetch($count_sql);
-            $length = get_value_in_array("cnt", $count_data, $length);
-        } elseif(array_key_equals("do_count", $options, "fn_count")) {
-            $length = count($rows);
+            $_sql = sprintf("select count(*) as cnt from (%s) a", get_db_binded_sql($sql, $bind));
+            $_data = exec_db_fetch($_sql);
+            $_cnt = get_value_in_array("cnt", $_data, $_cnt);
+        } elseif(array_key_equals("do_count", $options, "count")) {
+            $_cnt = count($rows);
+        } elseif(array_key_equals("do_count", $options, "PDOStatement::rowCount")) {
+            $_cnt = $stmt->rowCount();
         } else {
             $response = $rows;
             $is_not_countable = true;
@@ -274,7 +245,8 @@ if(!check_function_exists("exec_db_fetch_all")) {
 
         if(!$is_not_countable) {
             $response = array(
-                "length" => $length,
+                "length" => $_cnt, // compatible with 1.4 or lower
+                "cnt" => $_cnt,
                 "data" => $rows,
             );
         }
@@ -346,9 +318,11 @@ if(!check_function_exists("get_bind_to_sql_where")) {
     function get_bind_to_sql_where($bind, $excludes=array()) {
         $sql_where = "";
 
-        foreach($bind as $k=>$v) {
-            if(!in_array($k, $excludes)) {
-                $sql_where .= sprintf(" and %s = :%s", $k, $k);
+        if(is_array($bind)) {
+            foreach($bind as $k=>$v) {
+                if(!in_array($k, $excludes)) {
+                    $sql_where .= sprintf(" and %s = :%s", $k, $k);
+                }
             }
         }
 
@@ -383,7 +357,7 @@ if(!check_function_exists("get_bind_to_sql_select")) {
         if(!array_key_empty("fieldnames", $options)) {
             $s1 .= (check_array_length($options['fieldnames'], 0) > 0) ? implode(", ", $options['fieldnames']) : "*";
         } elseif(array_key_equals("getcnt", $options, true)) {
-            $s1 .= "count(*) as cnt";
+            $s1 .= sprintf("count(%s) as cnt", ($options['getcnt'] === true ? "*" : $options['getcnt']));
         } elseif(!array_key_empty("getsum", $options)) {
             $s1 .= sprintf("sum(%s) as sum", $options['getsum']);
         } else {
@@ -393,20 +367,29 @@ if(!check_function_exists("get_bind_to_sql_select")) {
         // s1a: s1 additonal (set new fields)
         $s1a = array();
         if(array_key_is_array("setfields", $options)) {
-            $addfields = $options['setfields'];
+            $setfields = $options['setfields'];
 
-            foreach($addfields as $k=>$v) {
+            foreach($setfields as $k=>$v) {
                 // concat and delimiter
-                if(!array_keys_empty(array("concat", "delimiter"), $v)) {
-                    // add to s1a
-                    $s1a[$k] = sprintf("concat(%s)", implode(sprintf(", '%s', ", $v['delimiter']), $v['concat']));
+                if(!array_keys_empty("concat", $v)) {
+                    $delimiter = get_value_in_array("delimiter", $v, " ");
+                    $s1a[$k] = sprintf("concat(%s)", implode(sprintf(", '%s', ", $delimiter), $v['concat']));
                 }
 
-                // use function
-                if(!array_key_empty("call_func", $v)) {
-                    if(check_array_length($v['call_func'], 1) > 0) {
+                // use mysql function
+                if(!array_key_empty("sql_function", $v)) {
+                    if(check_array_length($v['sql_function'], 1) > 0) {
                         // add to s1a
-                        $s1a[$k] = sprintf("%s(%s)", $v['call_func'][0], implode(", ", array_slice($v['call_func'], 1)));
+                        $s1a[$k] = sprintf("%s(%s)", $v['sql_function'][0], implode(", ", array_slice($v['sql_function'], 1)));
+                    }
+                }
+
+                // use simple distance
+                if(!array_key_empty("simple_distance", $v)) {
+                    if(check_array_length($v['simple_distance'], 2) == 0) {
+                        $a = floatval($v['simple_distance'][1]); // percentage (range 0 to 1)
+                        $b = $v['simple_distance'][0]; // field or number
+                        $s1a[$k] = sprintf("abs(1.0 - (abs(%s - %s) / %s))", $b, $a, $a);
                     }
                 }
             }
@@ -438,15 +421,23 @@ if(!check_function_exists("get_bind_to_sql_select")) {
                             if(check_array_length($opts[1][2], 0) > 0) {
                                 $s3a = array();
                                 foreach($opts[1][2] as $word) {
-                                    $s3a[] = sprintf("%s like '%s'", $s1a[$opts[1][1]], "%{$word}%");
+                                    $s3a[] = sprintf("%s like '%s'", get_value_in_array($opts[1][1], $s1a, $opts[1][1]), "%{$word}%");
                                 }
                                 $s3 .= sprintf(" %s (%s)", $opts[0], implode(" and ", $s3a));
                             } else {
-                                $s3 .= sprintf(" %s (%s like %s)", $opts[0], $s1a[$opts[1][1]], "'%{$opts[1][2]}%'");
+                                $s3 .= sprintf(" %s (%s like %s)", $opts[0], get_value_in_array($opts[1][1], $s1a, $opts[1][1]), "'%{$opts[1][2]}%'");
                             }
                         } elseif($opts[1][0] == "in") {
                             if(check_array_length($opts[1][2], 0) > 0) {
-                                $s3 .= sprintf(" %s (%s in ('%s'))", $opts[0], $s1a[$opts[1][1]], implode("', '", $opts[1][2]));
+                                $s3 .= sprintf(" %s (%s in ('%s'))", $opts[0], $opts[1][1], implode("', '", $opts[1][2]));
+                            }
+                        } elseif($opts[1][0] == "set") {
+                            if(check_array_length($opts[1][2], 0) > 0) {
+                                $s3a = array();
+                                foreach($opts[1][2] as $word) {
+                                    $s3a[] = sprintf("find_in_set('%s', %s)", $word, $opts[1][1]);
+                                }
+                                $s3 .= sprintf(" %s (%s)", $opts[0], implode(" and ", $s3a));
                             }
                         } else {
                             $ssts = array(
@@ -480,7 +471,7 @@ if(!check_function_exists("get_bind_to_sql_select")) {
                         $s4a[] = $opts;
                     } elseif(check_array_length($opts, 2) == 0) {
                         // example: array("desc", "datetime")
-                        $s4a[] = sprintf("%s %s", $opts[1], $opts[0]);
+                        $s4a[] = sprintf("%s %s", get_value_in_array($opts[1], $s1a, $opts[1]), $opts[0]);
                     }
                 }
                 $s4 .= implode(", ", $s4a);

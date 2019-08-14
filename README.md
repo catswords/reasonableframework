@@ -1,4 +1,8 @@
 # ReasonableFramework
+![Discord](https://img.shields.io/discord/359930650330923008.svg)
+![View Licence](https://img.shields.io/github/license/gnh1201/reasonableframework.svg)
+![Librapay](http://img.shields.io/liberapay/receives/catswords.svg?logo=liberapay)
+
 - ReasonableFramework is `RVHM` structured PHP Web Framework, Securely, Compatibility.
 - Prefix code: `RSF` (ReasonableFramework)
 - Old prefix code `VSPF` (Very Simple PHP Framework)
@@ -46,6 +50,10 @@
 - [Payment Gateway Integration (KCP)](https://github.com/gnh1201/reasonableframework/blob/master/route/orderpay.pgkcp.php)
 - [Gnuboard CMS Integration (version 4, version 5)](https://github.com/gnh1201/reasonableframework/blob/master/route/api.gnuboard.php)
 
+## [NEW] Advanced security (only for sponsors)
+- CORS, CSRF, XSS, SQL-injection protection is common security, it is free and open-source for everyone.
+- Firewall, DDoS protection, and more tools are available only for sponsors. [see details](https://github.com/gnh1201/reasonableframework/blob/master/SECURITY.md)
+
 ## How to use CLI
 ```
 $ php cli.php --route [route name]
@@ -59,7 +67,7 @@ $ php cli.php --route [route name]
 - Resonable PHP Framework는 CSRF, XSS, SQL Injection 보안 조치를 기본적으로 가지고 있습니다.
 - 한국에서 사용되는 각종 CMS와 API와 연동되어 한국 환경에서 사용 빈도가 높은 구현 유형을 작성하는데 적합합니다.
 - RVHM 구조는 MVC 구조와 함께 사용하실 수 있으며, 기존 개발 스킬로도 사용할 수 있도록 더 유연한 구조를 가집니다.
-- 한국에서 공식 기술 지원 담당은 `캐츠워즈 커뮤니티`가 맡고 있습니다. [카카오톡 오픈채팅방 입장](https://open.kakao.com/o/gWvNF1B)
+- 공식 카카오톡 오픈채팅방: 캐스플릿&리즈너블 사용자 모임 https://open.kakao.com/o/g9spGfrb
 
 ## English
 - It is stable in free web hosting, or other restrictive shared web hosting.
