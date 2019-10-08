@@ -59,7 +59,7 @@ if(!check_function_exists("get_formatted_number")) {
 }
 
 if(!check_function_exists("get_cutted_string")) {
-    function get_cutted_string($str, $start, $len=0, $charset="utf-8") {
+    function get_cutted_string($str, $start, $len=null, $charset="utf-8") {
         $result = "";
 
         if(check_function_exists("iconv_substr")) {
@@ -71,6 +71,46 @@ if(!check_function_exists("get_cutted_string")) {
         }
 
         return $result;
+    }
+}
+
+if(!check_function_exists("get_string_length")) {
+    function get_string_length($str, $charset="utf-8") {
+        $len = 0;
+
+        if(check_function_exists("iconv_strlen")) {
+            $len = iconv_strlen($str, $charset);
+        } elseif(check_function_exists("mb_strlen")) {
+            $len = mb_strlen($str, $charset);
+        } else {
+            $len = strlen($str);
+        }
+
+        return $len;
+    }
+}
+
+if(!check_function_exists("get_splitted_strings")) {
+    function get_splitted_strings($str, $len=32, $chsarset="utf-8") {
+        $strings = array();
+
+        $_len = get_string_length($str);
+        $_pos = 0;
+        if($len >= $_len) {
+            $strings[] = $str;
+        } else {
+            $__len = ceil($_len / $len);
+            for($i = 0; $i < $__len; $i++) {
+                $_pos = $len * $i;
+                $strings[] = get_cutted_string($str, $_pos, $len, $charset);
+            }
+
+            if($_len - $_pos > 0) {
+                $strings[] = $strings[] = get_cutted_string($str, $_pos);
+            }
+        }
+
+        return $strings;
     }
 }
 
@@ -171,14 +211,27 @@ if(!check_function_exists("parse_pipelined_data")) {
     }
 }
 
+// https://stackoverflow.com/questions/10290849/how-to-remove-multiple-utf-8-bom-sequences
+if(!check_function_exists("remove_utf8_bom")) {
+    function remove_utf8_bom($text) {
+        $bom = pack('H*','EFBBBF');
+        $text = preg_replace("/^$bom/", '', $text);
+        return $text;
+    }
+}
+
 if(!check_function_exists("get_tokenized_text")) {
-    function get_tokenized_text($text, $delimiters=array(",", " ", "|", "-", "+")) {
-        return array_filter(multi_explode($delimiters, $text));
+    function get_tokenized_text($text, $delimiters=array()) {
+        if(count($delimiters) > 0) {
+            return array_filter(multi_explode($delimiters, $text));
+        } else {
+            return preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+        }
     }
 }
 
 if(!check_function_exists("get_highlighted_html_by_words")) {
-    function get_highlighted_html_by_word($word, $text, $delimiters=array(",", " ", "|", "-", "+")) {
+    function get_highlighted_html_by_word($word, $text, $delimiters=array()) {
         $html = $text;
 
         $words = get_tokenized_text($word, $delimiters);
@@ -192,7 +245,7 @@ if(!check_function_exists("get_highlighted_html_by_words")) {
 
 if(!check_function_exists("get_floating_percentage")) {
     function get_floating_percentage($x, $a=2) {
-        return round($x / 100, $a);
+        return round(floatval($x) / 100, floatval($a));
     }
 }
 

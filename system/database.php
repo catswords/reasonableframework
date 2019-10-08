@@ -132,8 +132,8 @@ if(!check_function_exists("get_db_last_id")) {
         $last_id = false;
 
         $dbc = get_dbc_object();
-                $config = get_config();
-                $db_driver = get_db_driver();
+        $config = get_config();
+        $db_driver = get_db_driver();
 
         if(in_array($db_driver, array("mysql", "mysql.pdo"))) {
             $last_id = $dbc->lastInsertId();
@@ -299,7 +299,21 @@ if(!check_function_exists("get_page_range")) {
 }
 
 if(!check_function_exists("get_bind_to_sql_insert")) {
-    function get_bind_to_sql_insert($tablename, $bind) {
+    function get_bind_to_sql_insert($tablename, $bind, $options=array()) {
+        // check ignore
+        if(!array_key_empty("ignore", $options)) {
+            $cnt = intval(
+                get_value_in_array("cnt", exec_db_fetch(get_bind_to_sql_select($tablename, false, array(
+                    "getcnt" => true,
+                    "setwheres" => $options['ignore']
+                )), false), 0)
+            );
+            if($cnt > 0) {
+                return "select " . $cnt;
+            }
+        }
+
+        // make SQL statement
         $bind_keys = array_keys($bind);
         $sql = "insert into %s (%s) values (:%s)";
 
@@ -308,107 +322,39 @@ if(!check_function_exists("get_bind_to_sql_insert")) {
         $s3 = implode(", :", $bind_keys);
 
         $sql = sprintf($sql, $s1, $s2, $s3);
-
+        
         return $sql;
     }
 }
 
+// Deprecated: get_bind_to_sql_where($bind, $excludes) - lower than 1.6
+// Now: get_bind_to_sql_where($bind, $options, $_options) - 1.6 or above
+
 if(!check_function_exists("get_bind_to_sql_where")) {
     // warning: variable k is not protected. do not use variable k and external variable without filter
-    function get_bind_to_sql_where($bind, $excludes=array()) {
-        $sql_where = "";
+    function get_bind_to_sql_where($bind, $options=array(), $_options=array()) {
+        $s3 = "";
+        $sp = "";
 
-        if(is_array($bind)) {
+        $excludes = get_value_in_array("excludes", $options, array());
+        
+        // compatible version 1.5
+        if(array_key_equals("compatible", $_options, "1.5")) {
+            $excludes = $options;
+        }
+
+        if(is_array($bind)) {    
             foreach($bind as $k=>$v) {
                 if(!in_array($k, $excludes)) {
-                    $sql_where .= sprintf(" and %s = :%s", $k, $k);
+                    $s3 .= sprintf(" and %s = :%s", $k, $k);
                 }
             }
-        }
-
-        return $sql_where;
-    }
-}
-
-if(!check_function_exists("get_bind_to_sql_update_set")) {
-    // warning: variable k is not protected. do not use variable k and external variable without filter
-    function get_bind_to_sql_update_set($bind, $excludes=array()) {
-        $sql_update_set = "";
-        $set_items = "";
-
-        foreach($bind as $k=>$v) {
-            if(!in_array($k, $excludes)) {
-                $set_items[] = sprintf("%s = :%s", $k, $k);
-            }
-        }
-        $sql_update_set = implode(", ", $set_items);
-
-        return $sql_update_set;
-    }
-}
-
-if(!check_function_exists("get_bind_to_sql_select")) {
-    // warning: variable k is not protected. do not use variable k and external variable without filter
-    function get_bind_to_sql_select($tablename, $bind=array(), $options=array()) {
-        $sql = "select %s from %s where 1 %s %s %s";
-
-        // s1: select fields
-        $s1 = "";
-        if(!array_key_empty("fieldnames", $options)) {
-            $s1 .= (check_array_length($options['fieldnames'], 0) > 0) ? implode(", ", $options['fieldnames']) : "*";
-        } elseif(array_key_equals("getcnt", $options, true)) {
-            $s1 .= sprintf("count(%s) as cnt", ($options['getcnt'] === true ? "*" : $options['getcnt']));
-        } elseif(!array_key_empty("getsum", $options)) {
-            $s1 .= sprintf("sum(%s) as sum", $options['getsum']);
-        } else {
-            $s1 .= "*";
         }
         
-        // s1a: s1 additonal (set new fields)
-        $s1a = array();
-        if(array_key_is_array("setfields", $options)) {
-            $setfields = $options['setfields'];
-
-            foreach($setfields as $k=>$v) {
-                // concat and delimiter
-                if(!array_keys_empty("concat", $v)) {
-                    $delimiter = get_value_in_array("delimiter", $v, " ");
-                    $s1a[$k] = sprintf("concat(%s)", implode(sprintf(", '%s', ", $delimiter), $v['concat']));
-                }
-
-                // use mysql function
-                if(!array_key_empty("sql_function", $v)) {
-                    if(check_array_length($v['sql_function'], 1) > 0) {
-                        // add to s1a
-                        $s1a[$k] = sprintf("%s(%s)", $v['sql_function'][0], implode(", ", array_slice($v['sql_function'], 1)));
-                    }
-                }
-
-                // use simple distance
-                if(!array_key_empty("simple_distance", $v)) {
-                    if(check_array_length($v['simple_distance'], 2) == 0) {
-                        $a = floatval($v['simple_distance'][1]); // percentage (range 0 to 1)
-                        $b = $v['simple_distance'][0]; // field or number
-                        $s1a[$k] = sprintf("abs(1.0 - (abs(%s - %s) / %s))", $b, $a, $a);
-                    }
-                }
-            }
-        }
-
-        // s2: set table name
-        $s2 = "";
-        if(!empty($tablename)) {
-            $s2 .= $tablename;
-        } else {
-            set_error("tablename can not empty");
-            show_errors();
-        }
-
-        // s3: fields of where clause
-        $s3 = get_bind_to_sql_where($bind);
         if(!array_keys_empty(array("settimefield", "setminutes"), $options)) {
             $s3 .= get_bind_to_sql_past_minutes($options['settimefield'], $options['setminutes']);
         }
+
         if(!array_key_empty("setwheres", $options)) {
             if(is_array($options['setwheres'])) {
                 foreach($options['setwheres'] as $opts) {
@@ -417,7 +363,12 @@ if(!check_function_exists("get_bind_to_sql_select")) {
                     } elseif(check_array_length($opts, 3) == 0 && is_array($opts[2])) {
                         $s3 .= sprintf(" %s (%s)", $opts[0], get_db_binded_sql($opts[1], $opts[2]));
                     } elseif(check_array_length($opts, 2) == 0 && is_array($opts[1])) {
-                        if($opts[1][0] == "like") {
+                        if(is_array($opts[1][0])) {
+                            // recursive
+                            $s3 .= sprintf(" %s (%s)", $opts[0], get_bind_to_sql_where(false, array(
+                                "setwheres" => $opts[1]
+                            )));
+                        } elseif($opts[1][0] == "like") {
                             if(check_array_length($opts[1][2], 0) > 0) {
                                 $s3a = array();
                                 foreach($opts[1][2] as $word) {
@@ -460,6 +411,129 @@ if(!check_function_exists("get_bind_to_sql_select")) {
             }
         }
 
+        if(!array_key_empty("sql_where", $options)) {
+            $s3 .= sprintf(" %s", $options['sql_where']);
+        }
+
+        // set start prefix
+        $s3 = trim($s3);
+        $s3a = strpos($s3, " ");
+        $s3b = "";
+        if($s3a !== false) {
+            $s3b = substr($s3, 0, $s3a);
+        }
+        if($s3b == "and") {
+            $sp = "1";
+        } elseif($s3b == "or") {
+            $sp = "0";
+        }
+
+        return sprintf("%s %s", $sp, $s3);
+    }
+}
+
+if(!check_function_exists("get_bind_to_sql_update_set")) {
+    // warning: variable k is not protected. do not use variable k and external variable without filter
+    function get_bind_to_sql_update_set($bind, $excludes=array()) {
+        $sql_update_set = "";
+        $set_items = "";
+
+        foreach($bind as $k=>$v) {
+            if(!in_array($k, $excludes)) {
+                $set_items[] = sprintf("%s = :%s", $k, $k);
+            }
+        }
+        $sql_update_set = implode(", ", $set_items);
+
+        return $sql_update_set;
+    }
+}
+
+if(!check_function_exists("get_bind_to_sql_select")) {
+    // warning: variable k is not protected. do not use variable k and external variable without filter
+    function get_bind_to_sql_select($tablename, $bind=array(), $options=array()) {
+        $sql = "select %s from %s where %s %s %s";
+
+        // s1: select fields
+        $s1 = "";
+        if(!array_key_empty("fieldnames", $options)) {
+            $s1 .= (check_array_length($options['fieldnames'], 0) > 0) ? implode(", ", $options['fieldnames']) : "*";
+        } elseif(array_key_equals("getcnt", $options, true)) {
+            $s1 .= sprintf("count(%s) as cnt", ($options['getcnt'] === true ? "*" : $options['getcnt']));
+        } elseif(!array_key_empty("getsum", $options)) {
+            $s1 .= sprintf("sum(%s) as sum", $options['getsum']);
+        } else {
+            $s1 .= "*";
+        }
+        
+        // s1a: s1 additonal (set new fields)
+        $s1a = array();
+        if(array_key_is_array("setfields", $options)) {
+            $setfields = $options['setfields'];
+
+            foreach($setfields as $k=>$v) {
+                // add
+                if(!array_keys_empty("add", $v)) {
+                    $s1a[$k] = sprintf("(%s + %s)", $k, $v['add']);
+                }
+                
+                // sub
+                if(!array_keys_empty("sub", $v)) {
+                    $s1a[$k] = sprintf("(%s - %s)", $k, $v['sub']);
+                }
+                
+                // mul
+                if(!array_key_empty("mul", $v)) {
+                    $s1a[$k] = sprintf("(%s * %s)", $k, $v['mul']);
+                }
+                
+                // div
+                if(!array_key_empty("div", $v)) {
+                    $s1a[$k] = sprintf("(%s / %s)", $k, $v['div']);
+                }
+                
+                // eval (warning: do not use if you did not understand enough)
+                if(!array_key_empty("eval", $v)) {
+                    $s1a[$k] = sprintf("(%s)", $k, $v['eval']);
+                }
+
+                // concat and delimiter
+                if(!array_keys_empty("concat", $v)) {
+                    $delimiter = get_value_in_array("delimiter", $v, " ");
+                    $s1a[$k] = sprintf("concat(%s)", implode(sprintf(", '%s', ", $delimiter), $v['concat']));
+                }
+
+                // use mysql function
+                if(!array_key_empty("call", $v)) {
+                    if(check_array_length($v['call'], 1) > 0) {
+                        // add to s1a
+                        $s1a[$k] = sprintf("%s(%s)", $v['call'][0], implode(", ", array_slice($v['call'], 1)));
+                    }
+                }
+
+                // use simple distance
+                if(!array_key_empty("simple_distance", $v)) {
+                    if(check_array_length($v['simple_distance'], 2) == 0) {
+                        $a = floatval($v['simple_distance'][1]); // percentage (range 0 to 1)
+                        $b = $v['simple_distance'][0]; // field or number
+                        $s1a[$k] = sprintf("abs(1.0 - (abs(%s - %s) / %s))", $b, $a, $a);
+                    }
+                }
+            }
+        }
+
+        // s2: set table name
+        $s2 = "";
+        if(!empty($tablename)) {
+            $s2 .= $tablename;
+        } else {
+            set_error("tablename can not empty");
+            show_errors();
+        }
+
+        // s3: fields of where clause
+        $s3 = get_bind_to_sql_where($bind, $options);
+
         // s4: set orders
         $s4 = "";
         $s4a = array();
@@ -491,33 +565,51 @@ if(!check_function_exists("get_bind_to_sql_select")) {
     }
 }
 
+// Deprecated: get_bind_to_sql_update($tablename, $bind, $filters, $options) - lower than 1.6
+// Now: get_bind_to_sql_update($tablename, $bind, $options, $_options) - 1.6 or above
+
 if(!check_function_exists("get_bind_to_sql_update")) {
-    function get_bind_to_sql_update($tablename, $bind, $filters=array(), $options=array()) {
-        // process filters
+    function get_bind_to_sql_update($tablename, $bind, $options=array(), $_options=array()) {
         $excludes = array();
-        $bind_wheres = array();
-        foreach($bind as $k=>$v) {
-            if(!array_key_empty($k, $filters)) {
-                if($filters[$k] === true) {
-                    $bind_wheres[$k] = $v;
+        $_bind = array();
+
+        // compatible version 1.5
+        if(array_key_equals("compatible", $_options, "1.5")) {
+            foreach($options as $k=>$v) {
+                if($v == true) {
                     $excludes[] = $k;
-                } else {
-                    $bind_wheres[$k] = $filters[$k];
+                }
+            }
+            $options = $_options;
+        }
+
+        // setkeys
+        if(!array_key_empty("setkeys", $options)) {
+            $setkeys = $options['setkeys'];
+            foreach($bind as $k=>$v) {
+                if(in_array($k, $setkeys)) {
+                    $_bind[$k] = $v;
+                    $excludes[] = $k;
                 }
             }
         }
 
-        // make sql 'where' clause
-        $sql_where = get_db_binded_sql(get_bind_to_sql_where($bind_wheres), $bind_wheres);
-        if(!array_key_empty("sql_where", $options)) {
-            $sql_where .= $options['sql_where'];
+        // add excludes to options
+        if(!array_key_exists("excludes", $options)) {
+            $options['excludes'] = array();
+        }
+        foreach($excludes as $k=>$v) {
+            $options['excludes'][$k] = $v;
         }
 
+        // make sql 'where' clause
+        $sql_where = get_db_binded_sql(get_bind_to_sql_where($_bind, $options), $_bind);
+        
         // make sql 'update set' clause
         $sql_update_set = get_bind_to_sql_update_set($bind, $excludes);
 
         // make completed sql statement
-        $sql = sprintf("update %s set %s where 1 %s", $tablename, $sql_update_set, $sql_where);
+        $sql = sprintf("update %s set %s where %s", $tablename, $sql_update_set, $sql_where);
 
         return $sql;
     }
@@ -525,7 +617,7 @@ if(!check_function_exists("get_bind_to_sql_update")) {
 
 if(!check_function_exists("get_bind_to_sql_delete")) {
     function get_bind_to_sql_delete($tablename, $bind, $options=array()) {
-        $sql = "delete from %s where 1" . get_bind_to_sql_where($bind);
+        $sql = sprintf("delete from %s where %s", $tablename, get_db_binded_sql(get_bind_to_sql_where($bind, $options), $bind));
         return $sql;
     }
 }
@@ -596,6 +688,23 @@ if(!check_function_exists("json_decode_to_assoc")) {
         }
 
         return $result;
+    }
+}
+
+// temporary table
+if(!check_function_exists("exec_db_temp_start")) {
+    function exec_db_temp_start($sql, $bind, $options=array()) { 
+        $_tablename = make_random_id();
+        $_sql = sprintf("create temporary table if not exists %s as (%s)", $_tablename, get_db_binded_sql($sql, $bind));
+        return (exec_db_query($_sql) ? $_tablename : false);
+    }
+}
+
+// temporary table
+if(!check_function_exists("exec_db_temp_end")) {
+    function exec_db_temp_end($tablename, $options=array()) {
+        $_sql = sprintf("drop temporary table %s", $tablename);
+        return exec_db_query($_sql);
     }
 }
 
