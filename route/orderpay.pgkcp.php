@@ -2,6 +2,7 @@
 /**
  * @file orderpay.pgkcp.php
  * @date 2018-08-25
+ * @updated 2019-10-14
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief KCP PG(Payment Gateway) Controller
  */
@@ -9,6 +10,7 @@
 if(!defined("_DEF_RSF_")) set_error_exit("do not allow access");
 
 $debug = get_requested_value("debug");
+$mode = get_requested_value("mode");
 
 if($debug != "true") {
     // 필수 항목 체크
@@ -20,8 +22,8 @@ if($debug != "true") {
     }
 
     // detect CSRF attack
-    if(check_token_abuse_by_requests("_token")) {
-        set_error("Security violation: Access denied. May be your session is expired or abused.");
+    if($mode != "widget" && check_token_abuse_by_requests("_token")) {
+        set_error("Access denied because of security violation");
         show_errors();
     }
 }
@@ -48,6 +50,7 @@ $data = array(
 
 // 1. 주문 정보 입력: 결제에 필요한 주문 정보를 입력 및 설정합니다.
 $fieldnames = array(
+    "redirect_url",       // Redirect URL
     "pay_method",         // 지불 방법
     "pay_method_alias",   // 지불 방법 별칭
     "ordr_idxx",          // 주문 번호
@@ -108,6 +111,8 @@ $payinfo['res_msg'] = "";
 $payinfo['enc_info'] = "";
 $payinfo['enc_data'] = "";
 $payinfo['ret_pay_method'] = "";
+$payinfo['tran_cd'] = ""; // tran_cd가 유효하여야만 이후 tno 반환
+$payinfo['use_pay_method'] = "";
 $payinfo['ordr_chk'] = ""; // 주문정보 검증 관련 정보
 
 // 변경 제한 영역: 현금영수증 관련 정보

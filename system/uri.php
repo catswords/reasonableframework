@@ -1,47 +1,77 @@
 <?php
 /**
  * @file uri.php
- * @date 2018-04-13
+ * @created_on 2018-04-13
+ * @updated_on 2020-04-12
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief URI module
  */
 
-if(!check_function_exists("base_url")) {
+if(!is_fn("base_url")) {
     function base_url() {
-        return get_config_value("base_url");
+        $base_url = get_config_value("base_url");
+        if(empty($base_url)) {
+            $base_url = sprintf("https://%s", $_SERVER['HTTP_HOST']);
+        }
+        return $base_url;
     }
 }
 
-if(!check_function_exists("base_api_url")) {
+if(!is_fn("base_api_url")) {
     function base_api_url() {
         return get_config_value("base_api_url");
     }
 }
 
-if(!check_function_exists("get_uri")) {
+if(!is_fn("get_uri")) {
     function get_uri() {
         $requests = get_requests();
-
-        $request_uri = "";
-        if(!array_key_empty("REQUEST_URI", $_SERVER)) {
-            $request_uri = $requests["_URI"];
+        
+        $uri = get_requested_value("_uri");
+        if(empty($uri)) {
+            $uri = $requests["_URI"];
         }
 
-        return $request_uri;
+        return $uri;
     }
 }
 
-if(!check_function_exists("read_route")) {
-    function read_route($route=false) {
+if(!is_fn("read_route")) {
+    function read_route() {
         $route = false;
 
         $config = get_config();
         $requests = get_requests();
 
+        // get base route
+        $base_route = get_value_in_array("base_route", $config, "/");
+
         // get requested route
         $route = get_requested_value("route");
 
-        // if empty route
+        // get route in URI
+        if(empty($route)) {
+            if(loadHelper("networktool")) {
+                $nevt = get_network_event();
+
+                $uri = $requests['_URI'];
+                if(strpos($uri, '?') !== false) {
+                    $uri = substr($uri, 0, strpos($uri, '?'));
+                }
+
+                if(strpos($uri, $base_route) == 0) {
+                    $_routes = explode("/", substr($nevt['self'], strlen($base_route)));
+                    foreach($_routes as $_route) {
+                        if($_route != "index.php") {
+                            $route = $_route;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // default route: welcome
         if(empty($route)) {
             $route = get_value_in_array("default_route", $config, "welcome");
         }
@@ -50,7 +80,7 @@ if(!check_function_exists("read_route")) {
     }
 }
 
-if(!check_function_exists("read_requests")) {
+if(!is_fn("read_requests")) {
     function read_requests($options=array()) {
         $config = get_config();
 
@@ -80,9 +110,10 @@ if(!check_function_exists("read_requests")) {
         // check if json or serialized request
         foreach(getallheaders() as $name=>$value) {
             if($name == "Content-Type") {
-                if($value == "application/json") {
+                $values = explode(";", $value);
+                if(in_array("application/json", $values)) {
                     $options['json'] = true;
-                } elseif($value == "application/vnd.php.serialized") {
+                } elseif(in_array("application/vnd.php.serialized", $values)) {
                     $options['serialized'] = true;
                 }
                 break;
@@ -116,7 +147,7 @@ if(!check_function_exists("read_requests")) {
 
         // with security module
         $protect_methods = array("_ALL", "_GET", "_POST", "_JSON", "_SEAL", "_MIXED");
-        if(check_function_exists("get_clean_xss")) {
+        if(is_fn("get_clean_xss")) {
             foreach($protect_methods as $method) {
                 $requested_data = get_array(get_value_in_array($method, $requests, false));
                 foreach($requested_data as $k=>$v) {
@@ -148,19 +179,19 @@ if(!check_function_exists("read_requests")) {
     }
 }
 
-if(!check_function_exists("get_requests")) {
+if(!is_fn("get_requests")) {
     function get_requests() {
-        $requests = get_scope("requests");
+        $requests = get_shared_var("requests");
 
         if(!is_array($requests)) {
-            set_scope("requests", read_requests());
+            set_shared_var("requests", read_requests());
         }
 
-        return get_scope("requests");
+        return get_shared_var("requests");
     }
 }
 
-if(!check_function_exists("get_final_link")) {
+if(!is_fn("get_final_link")) {
     function get_final_link($url, $data=array(), $entity=true) {
         $link = "";
         $url = urldecode($url);
@@ -198,7 +229,7 @@ if(!check_function_exists("get_final_link")) {
     }
 }
 
-if(!check_function_exists("get_route_link")) {
+if(!is_fn("get_route_link")) {
     function get_route_link($route, $data=array(), $entity=true, $base_url="") {
         $_data = array(
             "route" => $route
@@ -215,9 +246,33 @@ if(!check_function_exists("get_route_link")) {
     }
 }
 
+// only for static resources (html, css, jpg, png, gif, ...)
+if(!is_fn("get_cdn_link")) {
+    function get_cdn_link($uri) {
+        $config = get_config();
+        
+        $base_url = get_value_in_array("base_url", $config, "");
+        $base_cdn_url = get_value_in_array("base_cdn_url", $config, $base_url);
+
+        return sprintf("%s%s", $base_cdn_url, $uri);
+    }
+}
+
+// only for video resources (avi, mp4, mpeg, ...)
+if(!is_fn("get_vod_link")) {
+    function get_vod_link($uri) {
+        $config = get_config();
+        
+        $base_url = get_value_in_array("base_url", $config, "");
+        $base_vod_url = get_value_in_array("base_vod_url", $config, $base_url);
+
+        return sprintf("%s%s", $base_vod_url, $uri);
+    }
+}
+
 // URI: Uniform Resource Identifier
 // URL: Uniform Resource Locator
-if(!check_function_exists("redirect_uri")) {
+if(!is_fn("redirect_uri")) {
     function redirect_uri($uri, $permanent=false, $options=array()) {
         if(array_key_equals("check_origin", $options, true)) {
             if(!check_redirect_origin($uri)) {
@@ -231,19 +286,19 @@ if(!check_function_exists("redirect_uri")) {
     }
 }
 
-if(!check_function_exists("redirect_with_params")) {
+if(!is_fn("redirect_with_params")) {
     function redirect_with_params($uri, $data=array(), $permanent=false, $entity=false) {
         redirect_uri(get_final_link($uri, $data, $entity), $permanent);
     }
 }
 
-if(!check_function_exists("redirect_route")) {
+if(!is_fn("redirect_route")) {
     function redirect_route($route, $data=array()) {
         redirect_uri(get_route_link($route, $data, false));
     }
 }
 
-if(!check_function_exists("get_requested_value")) {
+if(!is_fn("get_requested_value")) {
     function get_requested_value($name, $method="_ALL", $escape_quotes=true, $escape_tags=false) {
         $value = false;
         $requests = get_requests();
@@ -283,7 +338,7 @@ if(!check_function_exists("get_requested_value")) {
     }
 }
 
-if(!check_function_exists("get_requested_values")) {
+if(!is_fn("get_requested_values")) {
     function get_requested_values($names, $method="_ALL", $escape_quotes=true, $escape_tags=false) {
         $values = array();
 
@@ -297,14 +352,14 @@ if(!check_function_exists("get_requested_values")) {
     }
 }
 
-if(!check_function_exists("empty_requested_value")) {
+if(!is_fn("empty_requested_value")) {
     function empty_requested_value($name, $method="_ALL") {
         $value = get_requested_value($name, $method);
         return empty($value);
     }
 }
 
-if(!check_function_exists("get_binded_requests")) {
+if(!is_fn("get_binded_requests")) {
     function get_binded_requests($rules, $method="_ALL", $equals_kv=false) {
         $data = array();
 
@@ -320,25 +375,33 @@ if(!check_function_exists("get_binded_requests")) {
     }
 }
 
-if(!check_function_exists("get_array")) {
+if(!is_fn("get_array")) {
     function get_array($arr) {
         return is_array($arr) ? $arr : array();
     }
 }
 
-if(!check_function_exists("check_is_string_not_array")) {
+
+if(!is_fn("get_int")) {
+    function get_int($str) {
+        return intval(preg_replace('/[^0-9]/', '', $str));
+    }
+}
+
+if(!is_fn("check_is_string_not_array")) {
     function check_is_string_not_array($str) {
         return (is_string($str) && !(is_array($str) || $str == "Array"));
     }
 }
 
-if(!check_function_exists("set_header_content_type")) {
+if(!is_fn("set_header_content_type")) {
     function set_header_content_type($type) {
         $type = strtolower($type);
         $rules = array(
             "json" => "application/json",
             "xml" => "text/xml",
             "txt" => "text/plain",
+            "yaml" => "application/x-yaml",
             "html" => "text/html",
             "xhtml" => "application/xhtml+xml",
             "cspt" => "application/catsplit",
@@ -347,18 +410,13 @@ if(!check_function_exists("set_header_content_type")) {
         if(array_key_exists($type, $rules)) {
             header(sprintf("Content-type: %s", $rules[$type]));
         } else {
-            header("Content-type: plain/text");
+            header("Content-type: text/plain");
         }
     }
 }
 
-if(!check_function_exists("get_requested_jsondata")) {
+if(!is_fn("get_requested_jsondata")) {
     function get_requested_jsondata($name, $escape_quotes=true, $escape_tags=false) {
         return get_requested_jsondata($name, "_JSON", $escape_quotes, $escape_tags);
     }
 }
-
-// set scope
-set_scope("requests", read_requests());
-
-//EOF

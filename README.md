@@ -3,17 +3,19 @@
 ![View Licence](https://img.shields.io/github/license/gnh1201/reasonableframework.svg)
 ![Librapay](http://img.shields.io/liberapay/receives/catswords.svg?logo=liberapay)
 
-- ReasonableFramework is `RVHM` structured PHP Web Framework, Securely, Compatibility.
+- ReasonableFramework is `RVHM` structured PHP framework with common security
 - Prefix code: `RSF` (ReasonableFramework)
-- Old prefix code `VSPF` (Very Simple PHP Framework)
+- Old prefix code: `VSPF` (Very Simple PHP Framework)
 
-## Donate us (or if you need technical support)
-- https://www.patreon.com/posts/25380536
- 
+![This project open source licensed under LGPL version 3](https://github.com/gnh1201/reasonableframework/raw/master/lgplv3-147x51.png)
+
+## technical support (donate us)
+- [Technical support and improved web security for ReasonableFramework](https://catswords.re.kr/go/rsfsecurity) ($4/Monthly, pay on Patreon)
+
 ## Specification
 - Database connection (via PDO, MySQLi (MySQL Improved), MySQL Tranditional, MySQL CLI, Oracle(OCI))
-- RVHM Structure: `R` is Route (like as `controller`), `V` is View, `H` is Helper (like as `import` on Python/Go/NodeJS), `M` is Model and implemented with `KV bind`(like as `Map` data structure), Modal is optional.
-- AppJail(WebApp Sandbox): You can use legacy apps without modifying the source code.
+- RVHM structure: `R` is Route (like as `controller`), `V` is View, `H` is Helper (like as `import` on Python/Go/NodeJS), `M` is Model and implemented with `KV bind`(like as `Map` data structure), Model is not required.
+- Controllable shared variables: Minimize abuse of global variables (Inspired by the `scope` of AngularJS, and `SharedPreferences` of Android Framework)
 
 ## Compatible
 - Tested in PHP 5.3.3
@@ -29,50 +31,67 @@
 ## Map of structure
 ![Map of structure](https://github.com/gnh1201/reasonableframework/raw/master/assets/img/reasonableframework.jpg)
 
-## Roadmap: Support legacy
-- Support critical legacy web server (old: PHP 4.x ~ modern: 7.x)
-- Support critical old browser (old: IE 6 ~ modern: IE 11)
-- Do Clean & Modern PHP without hard studies.
-
-## Contact me
-- Go Namhyeon <gnh1201@gmail.com>
-- Website: https://exts.kr/go/home
+## Roadmap
+- Support critial and special-purposed web environment (industry, scientific, legacy, or more)
 
 ## Quick Start
 1. git clone https://github.com/gnh1201/reasonableframework.git
 2. set up database configuration: `/storage/config/database.ini.php`
-3. touch(make new file): `/route/example.php`
+3. create new file: `/route/example.php`
 4. go to `http://[base_url]/?route=example` or `http://[base_url]/example/`(if set `.htaccess`) in your web browser.
 5. enjoy it.
 
 ## Examples
 - [REST API Integration (Naver Papago Translation REST API)](https://gist.github.com/gnh1201/081484e6f5e10bd3be819093ba5f49c8)
 - [Payment Gateway Integration (KCP)](https://github.com/gnh1201/reasonableframework/blob/master/route/orderpay.pgkcp.php)
-- [Gnuboard CMS Integration (version 4, version 5)](https://github.com/gnh1201/reasonableframework/blob/master/route/api.gnuboard.php)
 
 ## [NEW] Advanced security (only for sponsors)
 - CORS, CSRF, XSS, SQL-injection protection is common security, it is free and open-source for everyone.
-- Firewall, DDoS protection, and more tools are available only for sponsors. [see details](https://github.com/gnh1201/reasonableframework/blob/master/SECURITY.md)
+- Firewall, DDoS protection, and more security tools are available only for sponsors. [more](https://github.com/gnh1201/reasonableframework/blob/master/SECURITY.md)
 
-## How to use CLI
+## [NEW] Remote Debugging (free for all)
+- Remote debugging feature based on [RFC3164(The BSD Syslog Protocol)](https://catswords.re.kr/go/rfc3164), with [Papertrail](https://catswords.re.kr/go/papertrail)
+
+## Compatible of free web hostings
+
+| Provider               | Pass?  | Tested version | Note
+| ---------------------- | ------ | -------------- | ------------- |
+| cafe24.com (Paid)      | Passed | v1.6.2         |               |
+| woobi.co.kr            | Passed | v1.6.2         |               |
+| dothome.co.kr          | Passed | v1.5           |               |
+| ivyro.net              | Passed | v1.5           |               |
+| 000webhost.com         | Warn   | v1.5           | Ad logo       |
+| freewebhostingarea.com | Passed | v1.5           |               |
+| infinityfree.net       | Warn   | v1.5           | anti-crawling |
+| freehosting.io         | Passed | v1.5           |               |
+| freehostingeu.com      | Warn   | v1.5           | CURL blocked  |
+| freehostingnoads.net   | Warn   | v1.5           | CURL blocked  |
+| awardspace.com         | Warn   | v1.5           | CURL blocked  |
+
+## How to use CLI (Command line interface)
 ```
-$ php cli.php --route [route name]
+$ php cli.php --route [route name] --session-id [session ID]
 ```
 
 ## 한국어(Korean)
-- Resonable PHP Framework(이유있는 PHP 프레임워크)는 한국의 웹 개발 환경에 적합한 PHP 프레임워크입니다.
-- 일부 북미, 유럽권 무료 웹 호스팅에서도 안정적인 운영이 가능합니다.
-- Composer를 포함한 별도의 개발 보조 도구, PHP 플러그인, PHP 프레임워크가 사용 불가능한 환경에 적합합니다.
-- 개발 팀원을 대상으로 객체지향(OOP) 교육이 이루어지지 않아도, 그에 준하는 생존주기(Life cycle)를 보장합니다.
-- Resonable PHP Framework는 CSRF, XSS, SQL Injection 보안 조치를 기본적으로 가지고 있습니다.
-- 한국에서 사용되는 각종 CMS와 API와 연동되어 한국 환경에서 사용 빈도가 높은 구현 유형을 작성하는데 적합합니다.
-- RVHM 구조는 MVC 구조와 함께 사용하실 수 있으며, 기존 개발 스킬로도 사용할 수 있도록 더 유연한 구조를 가집니다.
-- 공식 카카오톡 오픈채팅방: 캐스플릿&리즈너블 사용자 모임 https://open.kakao.com/o/g9spGfrb
+- **리즈너블(이유있는) 프레임워크**는 거친 웹 개발 환경을 위해 설계된 PHP 프레임워크입니다.
+- **레거시 개발**이나 **과학기술연구** 등 특수 목적을 가진 개발에 특화된 설계로 높은 안정성과 보안을 제공합니다.
+- PHP를 기반으로 하는 무료 웹 호스팅에서도 원활하게 돌아가도록 지원합니다.
+- 객체지향, 모듈러(MVC), 시큐어 코딩 등 현대적인 웹 기술을 모르더라도 **더 견고한** 기준을 제공합니다.
+- 리즈너블 프레임워크는 CSRF, XSS, SQL 인젝션 등 기초적인 **보안 위협에 사전 대응**하도록 설계되어 있습니다.
+- PHP 버전 4 부터 버전 7까지 다양한 개인 및 기업 **적용 사례**를 보유하고 있습니다.
+- [카카오톡 채팅방](https://catswords.re.kr/go/kakaotalk)을 통해 실시간 버그 및 보안 이슈 해결이 가능합니다.
 
 ## English
-- It is stable in free web hosting, or other restrictive shared web hosting.
-- Ideal for environments where separate development aids, including Composer, PHP extensions, and the famous PHP framework are not available.
-- Ensures a life-cycle similar to that of an object-oriented programming (OOP) level without trained developers.
-- The Reasonable PHP Framework has CSRF, XSS, and SQL Injection security protection as defaults.
-- Compatible with various CMS and API used with REST API, it is suitable to create implementation type that is frequently used in various environment.
-- RVHM structure can be used with MVC structure, and has more flexible structure to use as existing development skill.
+- **Reasonable Framework** is a PHP framework designed for rugged web development environments.
+- Designed for special purpose development such as **legacy development** or **science and technology research**, it provides high stability and security.
+- It also works smoothly on free web hosting based on PHP.
+- It provides a **stronger standard** even if you don't know modern web technologies, such as object-oriented, modular (MVC), and secure coding.
+- Resonable Framework is designed to **proactively respond to fundamental security threats** such as CSRF, XSS, and SQL injection.
+- We have **various enterprise cases** from PHP version 4(legacy) to 7(modern).
+- You can quickly resolve bugs and security issues in [our chatting room](https://catswords.re.kr/go/kakaotalk).
+
+## Contact us
+- gnh1201@gmail.com
+- support@exts.kr
+- catswords@protonmail (if you require confidential)

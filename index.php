@@ -1,30 +1,32 @@
 <?php
 /**
  * @file index.php
- * @date 2018-05-27
- * @updated 2019-06-04
+ * @created_on 2018-05-27
+ * @updated_on 2020-02-18
  * @author Go Namhyeon <gnh1201@gmail.com>
- * @brief ReasonableFramework
+ * @brief ReasonableFramework is RVHM structured PHP framework with common security
  * @cvs https://github.com/gnh1201/reasonableframework
- * @sponsor https://patreon.com/catswords (Check this link if you want use the advanced security)
+ * @sponsor https://patreon.com/catswords (with advanced security)
  */
 
 define("_DEF_VSPF_", true); // compatible to VSPF
 define("_DEF_RSF_", true); // compatible to RSF
 define("APP_DEVELOPMENT", false); // set the status of development
-define("DOC_EOL", "\r\n"); // set the 'end of line' commonly
+define("DOC_EOL", "\r\n"); // set the 'end of line'
 define("CORS_DOMAINS", false); // common security: allow origin domains (e.g. example.org,*.example.org)
 define("PHP_FIREWALL_REQUEST_URI", strip_tags($_SERVER['REQUEST_URI'])); // advanced security
 define("PHP_FIREWALL_ACTIVATION", false); // advanced security
 define("PHP_DDOS_PROTECTION", false); // advanced security
 
-// check if current status is development
+// development mode
 if(APP_DEVELOPMENT == true) {
     error_reporting(E_ALL);
+    @ini_set("log_errors", 1);
+    @ini_set("error_log", sprintf("%s/storage/sandbox/logs/error.log", getcwd()));
 } else {
     error_reporting(E_ERROR | E_PARSE);
 }
-ini_set("display_errors", 1);
+@ini_set("display_errors", 1);
 
 // CORS Security (https or http)
 if(CORS_DOMAINS !== false) {
@@ -58,8 +60,8 @@ if(CORS_DOMAINS !== false) {
     }
 }
 
-// set empty scope
-$scope = array();
+// set shared vars
+$shared_vars = array();
 
 // define system modules
 $load_systems = array("base", "storage", "config", "security", "database", "uri", "logger");
@@ -83,9 +85,37 @@ foreach($load_systems as $system_name) {
 // get config
 $config = get_config();
 
+// get requests
+$requests = get_requests();
+
+// get PID(Process ID)
+set_shared_var("mypid", getmypid());
+
+// set database connection
+// variable _unset_dbc: will not connect to database
+$_unset_dbc = get_requested_value("_unset_dbc");
+if(empty($_unset_dbc)) {
+    set_shared_var("dbc", get_db_connect());
+}
+
 // set max_execution_time
-$max_execution_time = get_value_in_array("max_execution_time", $config, 0);
-@ini_set("max_execution_time", $max_execution_time);
+$max_execution_time = get_value_in_array("max_execution_time", $config, -1);
+set_max_execution_time($max_execution_time);
+
+// set memory limit
+$memory_limit = get_value_in_array("memory_limit", $config, -1);
+set_memory_limit($memory_limit);
+
+// set upload max filesize
+$upload_max_filesize = get_value_in_array("upload_max_filesize", $config, -1);
+set_upload_max_filesize($upload_max_filesize);
+
+// set post max size
+$post_max_size = get_value_in_array("post_max_size", $config, -1);
+set_post_max_size($post_max_size);
+
+// start session
+start_isolated_session();
 
 // set autoloader
 if(!array_key_empty("enable_autoload", $config)) {
@@ -102,17 +132,22 @@ write_visit_log();
 // get requested route
 $route = read_route();
 
-// advanced security: set PHP firewall
+// advanced security: PHP firewall
 if(PHP_FIREWALL_ACTIVATION !== false) {
     loadHelper("php-firewall.lnk");
 }
 
-// advanced security: set DDOS protection
-IF(PHP_DDOS_PROTECTION !== false) {
+// advanced security: DDOS protection
+if(PHP_DDOS_PROTECTION !== false) {
     loadHelper("php-ddos.lnk");
 }
 
-// load route file
-if(!loadRoute($route, $scope)) {
-    loadRoute("errors/404", $scope);
+// load route
+if(!loadRoute($route, $shared_vars)) {
+    loadRoute("errors/404", $shared_vars);
 }
+
+// disconnect database
+close_db_connect();
+
+// EOF

@@ -1,60 +1,85 @@
 <?php
 /**
  * @file base.php
- * @date 2018-04-13
+ * @created_on 2018-04-13
+ * @updated_on 2020-02-10
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief Base module
  */
 
-// check invalid function (mixed)
-if(!function_exists("check_invalid_function")) {
-    function check_invalid_function($fn) {
-        $status = -1;
+// is_not_fn: mixed
+if(!function_exists("is_not_fn")) {
+    function is_not_fn($fn) {
+        $err = -1;
 
         if(is_array($fn)) {
             foreach($fn as $k=>$v) {
-                if(!function_exists($v)) {
-                    $status = $k;
+                if(!function_exists($v) || !is_callable($v)) {
+                    $err = $k;
                     break;
                 }
             }
+        } elseif(!function_exists($fn) || !is_callable($fn)) {
+            $err++;
+        }
+
+        return $err;
+    }
+}
+
+// is_fn: bool
+if(!(is_not_fn("is_fn") < 0)) {
+    function is_fn($fn) {
+        return (is_not_fn($fn) < 0);
+    }
+}
+
+if(!is_fn("is_deprecated_fn")) {
+    function is_deprecated_fn($fn) {
+        $flag = false;
+
+        $config = get_config();
+        $deprecated_fn = get_value_in_array("deprecated_fn", $config, array());
+        $deprecated_fn_list = explode(",", $deprecated_fn);
+
+        if(is_array($fn)) {
+            foreach($fn as $k=>$v) {
+                if(in_array($v, $deprecated_fn_list)) {
+                    $flag = true;
+                    write_common_log(sprintf("Deprecated: %s()", $v), "system/base");
+                }
+            }
         } else {
-            if(!function_exists($fn)) {
-                $status = 0;
+            if(in_array($fn, $deprecated_fn_list)) {
+                $flag = true;
+                write_common_log(sprintf("Deprecated: %s()", $fn), "system/base");
             }
         }
 
-        return $status;
+        return $flag;
     }
 }
 
-// check function exists (bool)
-if(!(check_invalid_function("check_function_exists") < 0)) {
-    function check_function_exists($fn) {
-        return (check_invalid_function($fn) < 0);
+// set_shared_var: void
+if(!is_fn("set_shared_var")) {
+    function set_shared_var($k, $v) {
+        global $shared_vars;
+        $shared_vars[$k] = $v;
     }
 }
 
-// set scope
-if(!check_function_exists("set_scope")) {
-    function set_scope($k, $v) {
-        global $scope;
-        $scope[$k] = $v;
-    }
-}
-
-// get scope
-if(!check_function_exists("get_scope")) {
-    function get_scope($k) {
-        global $scope;
-        return array_key_exists($k, $scope) ? $scope[$k] : null;
+// get shared var: mixed
+if(!is_fn("get_shared_var")) {
+    function get_shared_var($k) {
+        global $shared_vars;
+        return array_key_exists($k, $shared_vars) ? $shared_vars[$k] : null;
     }
 }
 
 // register loaded resources
-if(!check_function_exists("register_loaded")) {
+if(!is_fn("register_loaded")) {
     function register_loaded($k, $v) {
-        $loaded = get_scope("loaded");
+        $loaded = get_shared_var("loaded");
 
         if(array_key_exists($k, $loaded)) {
             if(is_array($loaded[$k])) {
@@ -62,12 +87,12 @@ if(!check_function_exists("register_loaded")) {
             }
         }
         
-        set_scope("loaded", $loaded);
+        set_shared_var("loaded", $loaded);
     }
 }
 
 // sandbox for include function
-if(!check_function_exists("include_isolate")) {
+if(!is_fn("include_isolate")) {
     function include_isolate($file, $data=array()) {
         if(count($data) > 0) {
             extract($data);
@@ -77,14 +102,14 @@ if(!check_function_exists("include_isolate")) {
 }
 
 // set autoloader
-if(!check_function_exists("set_autoloader")) {
+if(!is_fn("set_autoloader")) {
     function set_autoloader() {
         return include('./vendor/autoload.php');
     }
 }
 
 // load view file
-if(!check_function_exists("renderView")) {
+if(!is_fn("renderView")) {
     function renderView($name, $data=array()) {
         $flag = true;
         $views = explode(';', $name);
@@ -100,7 +125,7 @@ if(!check_function_exists("renderView")) {
 }
 
 // load view by rules
-if(!check_function_exists("renderViewByRules")) {
+if(!is_fn("renderViewByRules")) {
     function renderViewByRules($rules, $data=array()) {
         foreach($rules as $k=>$v) {
             if(in_array($k, get_routes())) {
@@ -111,7 +136,7 @@ if(!check_function_exists("renderViewByRules")) {
 }
 
 // load system module
-if(!check_function_exists("loadModule")) {
+if(!is_fn("loadModule")) {
     function loadModule($name) {
         $flag = true;
         $modules = explode(';', $name);
@@ -129,7 +154,7 @@ if(!check_function_exists("loadModule")) {
 }
 
 // load helper file
-if(!check_function_exists("loadHelper")) {
+if(!is_fn("loadHelper")) {
     function loadHelper($name) {
         $flag = true;
         $helpers = explode(';', $name);
@@ -147,7 +172,7 @@ if(!check_function_exists("loadHelper")) {
 }
 
 // load route file
-if(!check_function_exists("loadRoute")) {
+if(!is_fn("loadRoute")) {
     function loadRoute($name, $data=array()) {
         $flag = true;
         $routes = explode(";", $name);
@@ -165,7 +190,7 @@ if(!check_function_exists("loadRoute")) {
 }
 
 // load vendor file
-if(!check_function_exists("loadVendor")) {
+if(!is_fn("loadVendor")) {
     function loadVendor($uses, $data=array()) {
         $flag = true;
         $usenames = array();
@@ -191,7 +216,7 @@ if(!check_function_exists("loadVendor")) {
     }
 }
 
-if(!check_function_exists("array_key_empty")) {
+if(!is_fn("array_key_empty")) {
     function array_key_empty($key, $array) {
         $flag = true;
         
@@ -205,7 +230,7 @@ if(!check_function_exists("array_key_empty")) {
     }
 }
 
-if(!check_function_exists("array_key_equals")) {
+if(!is_fn("array_key_equals")) {
     function array_key_equals($key, $array, $value) {
         $flag = false;
 
@@ -219,7 +244,7 @@ if(!check_function_exists("array_key_equals")) {
     }
 }
 
-if(!check_function_exists("array_key_is_array")) {
+if(!is_fn("array_key_is_array")) {
     function array_key_is_array($key, $array) {
         $flag = false;
 
@@ -233,7 +258,16 @@ if(!check_function_exists("array_key_is_array")) {
     }
 }
 
-if(!check_function_exists("array_keys_empty")) {
+// example: array_key_unset(array_search("apple", $fruits), $fruits);
+if(!is_fn("array_key_unset")) {
+    function array_key_unset($key, &$array) {
+        if(array_key_exists($key, $array)) {
+            unset($array[$key]);
+        }
+    }
+}
+
+if(!is_fn("array_keys_empty")) {
     function array_keys_empty($keys, $array) {
         $flag = false;
         foreach($keys as $key) {
@@ -245,7 +279,7 @@ if(!check_function_exists("array_keys_empty")) {
     }
 }
 
-if(!check_function_exists("get_value_in_array")) {
+if(!is_fn("get_value_in_array")) {
     function get_value_in_array($name, $arr=array(), $default=false) {
         $output = false;
 
@@ -271,65 +305,71 @@ if(!check_function_exists("get_value_in_array")) {
     }
 }
 
-if(!check_function_exists("get_value_in_object")) {
+if(!is_fn("get_value_in_object")) {
     function get_value_in_object($name, $obj, $default="") {
         $output = $obj->$name;
         return $output;
     }
 }
 
-if(!check_function_exists("check_array_length")) {
+if(!is_fn("check_array_length")) {
     function check_array_length($arr, $len) {
         return ((!is_array($arr) ? -1 : count($arr)) - $len);
     }
 }
 
-if(!check_function_exists("check_is_empty")) {
+if(!is_fn("check_is_empty")) {
     function check_is_empty($v, $d=true) {
         return (empty($v) ? $d : false);
     }
 }
 
-// error handler
-if(!check_function_exists("set_error")) {
-    function set_error($msg, $code="ERROR") {
-        global $scope;
-        $scope['errors'][] = $code . ": " . $msg;
+if(!is_fn("get_key_in_array")) {
+    function get_key_in_array($val, $arr) {
+        return array_search($val, $arr);
     }
 }
 
-if(!check_function_exists("get_errors")) {
+// error handler (set error)
+if(!is_fn("set_error")) {
+    function set_error($msg, $code="ERROR") {
+        global $shared_vars;
+        $shared_vars['errors'][] = $code . ": " . $msg;
+        write_common_log($msg, "set_error");
+    }
+}
+
+// error handler (get errors)
+if(!is_fn("get_errors")) {
     function get_errors($d=false, $e=false) { // d: display, e: exit
-        global $scope;
-        $errors = $scope['errors'];
-        if($d === true) {
-            foreach($errors as $err) {
-                echo $err . PHP_EOL;
-            }
+        global $shared_vars;
+        return $shared_vars['errors'];
+    }
+}
+
+// error handler (show errors)
+if(!is_fn("show_errors")) {
+    function show_errors($exit=true) {
+        $errors = get_errors();
+        foreach($errors as $err) {
+            echo $err . DOC_EOL;
         }
 
-        if($e === true) {
+        if($exit !== false) {
             exit;
         }
-
-        return $errors;
     }
 }
 
-if(!check_function_exists("show_errors")) {
-    function show_errors($exit=true) {
-        return get_errors(true, $exit);
-    }
-}
-
-if(!check_function_exists("do_error")) {
-    function do_error($msg, $code="ERROR") {
+// error handler (trigger error)
+if(!is_fn("trigger_error")) {
+    function trigger_error($msg, $code="ERROR") {
         set_error($msg, $code);
         show_errors();
     }
 }
 
-if(!check_function_exists("get_property_value")) {
+if(!is_fn("get_property_value")) {
     function get_property_value($prop, $obj, $ac=false) {
         $result = false;
         if(is_object($obj) && property_exists($obj, $prop)) {
@@ -346,22 +386,22 @@ if(!check_function_exists("get_property_value")) {
     }
 }
 
-if(!check_function_exists("get_routes")) {
+if(!is_fn("get_routes")) {
     function get_routes() {
-        $loaded = get_scope("loaded");
+        $loaded = get_shared_var("loaded");
         return $loaded['route'];
     }
 }
 
 // Deprecated: array_multikey_empty() is changed to array_keys_empty(), since version 1.2
-if(!check_function_exists("array_multikey_empty")) {
+if(!is_fn("array_multikey_empty")) {
     function array_multikey_empty($keys, $array) {
         return array_keys_empty($keys, $array);
     }
 }
 
 // Deprecated: set_error_exit() is changed to do_error()
-if(!check_function_exists("set_error_exit")) {
+if(!is_fn("set_error_exit")) {
     function set_error_exit($msg, $code="ERROR") {
         do_error($msg, $code);
     }
@@ -377,5 +417,5 @@ $loaded = array(
 
 $errors = array();
 
-set_scope("loaded", $loaded);
-set_scope("errors", $errors);
+set_shared_var("loaded", $loaded);
+set_shared_var("errors", $errors);

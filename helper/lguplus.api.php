@@ -1,9 +1,12 @@
 <?php
-// @date 2019-10-07
-// @author Go Namhyeon <gnh1201@gmail.com>
-// @brief `LGU+` is trandmark of LGUPlus Co. Ltd.
+/**
+ * @file lguplus.api.php
+ * @date 2019-10-07
+ * @author Go Namhyeon <gnh1201@gmail.com>
+ * @brief `LGU+`or `LGUPlus` is trandmark of LGUPlus Co. Ltd.
+ */
 
-require_once("vendor/_dist/lguplus/openapi/message.php");
+require_once("./vendor/_dist/lguplus/openapi/message.php");
 use openapi\message;
 
 function lguplus_get_config() {
@@ -26,7 +29,7 @@ function lguplus_send_message($message, $to="") {
         "error" => false
     );
 
-    if(array_key_equals("lguplus_enabled", $cnf, 0)) {
+    if(!array_key_equals("enabled", $cnf, 1)) {
         $data['error'] = "this is disabled. please set lguplus_enabled to 1";
         return $data;
     }

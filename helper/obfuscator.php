@@ -6,15 +6,15 @@
  * @brief PHP Obfuscator for ReasonableFramework
  */
 
-if(!check_function_exists("get_obfuscator")) {
+if(!is_fn("get_obfuscator")) {
   function get_obfuscator() {
     $obfuscator = rand(1, 15);
-    set_scope("obfuscator", $obfuscator);
+    set_shared_var("obfuscator", $obfuscator);
     return $obfuscator;
   }
 }
 
-if(!check_function_exists("get_obfuscated_result")) {
+if(!is_fn("get_obfuscated_result")) {
   function get_obfuscated_result($raw) {
     $result = false;
 

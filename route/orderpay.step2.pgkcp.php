@@ -1,7 +1,8 @@
 <?php
 /**
  * @file orderpay.step2.pgkcp.php
- * @date 2018-08-27
+ * @created_on 2018-08-27
+ * @updated_on 2020-01-25
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief KCP PG(Payment Gateway) contoller when done
  */
@@ -10,13 +11,13 @@ if(!defined("_DEF_RSF_")) set_error_exit("do not allow access");
 
 // detect CSRF attack
 if(check_token_abuse_by_requests("_token", "_POST")) {
-    set_error("Security violation: Access denied. May be your session is expired or abused.");
+    set_error("Access denied because of security violation");
     show_errors();
 }
 
 loadHelper("webpagetool"); // load webpage tools
 loadHelper("networktool"); // load network tools
-loadHelper("string.urils"); // load string utility
+loadHelper("string.utils"); // load string utility
 loadHelper("pgkcp.lnk"); // load KCP PG Helper
 loadHelper("JSLoader.class"); // load javascript loader
 
@@ -273,6 +274,11 @@ if($req_tx == "pay") {
         }
     }
 } // End of [res_cd = "0000"]
+
+// set encoding
+foreach($payres as $k=>$v) {
+    $payres[$k] = get_converted_string($v, "utf-8", "cp949");
+}
 
 // set result
 extract($payres);

@@ -1,26 +1,57 @@
 <?php
 /**
  * @file string.utils.php
- * @date 2018-05-27
+ * @created_on 2018-05-27
+ * @updated_on 2020-02-21
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief String utility helper
  */
 
-if(!check_function_exists("get_converted_string")) {
-    function get_converted_string($str, $to_charset, $from_charset) {
+if(!is_fn("get_converted_string")) {
+    function get_converted_string($str, $to_charset="detect", $from_charset="detect") {
         $result = false;
 
+        // detect charset (input)
         if($form_charset == "detect") {
-            if(check_function_exists(array("mb_detect_encoding", "mb_detect_order"))) {
+            if(is_fn(array("mb_detect_encoding", "mb_detect_order"))) {
                 $from_charset = mb_detect_encoding($str, mb_detect_order(), true);
             } else {
                 $from_charset = "ISO-8859-1";
             }
         }
+        
+        // detect charset (output)
+        if($to_charset == "detect") {
+            if(is_fn("mb_internal_encoding")) {
+                $to_charset = mb_internal_encoding();
+            } elseif(is_fn("iconv_get_encoding")) {
+                $to_charset = iconv_get_encoding("internal_encoding");
+            } else {
+                $_candidates = array(
+                    ini_get("default_charset"),
+                    ini_get("iconv.internal_encoding"),
+                    ini_get("mbstring.internal_encoding"),
+                    "UTF-8"
+                );
+                foreach($_candidates as $_candidate) {
+                    if(!empty($_candidate)) {
+                        $to_charset = $_candidate;
+                        break;
+                    }
+                }
+            }
+        }
 
-        if(check_function_exists("iconv")) {
+        // normalize charset (UPPERCASE)
+        $from_charset = strtoupper($from_charset);
+        $to_charset = strtoupper($to_charset);
+
+        // test conditions
+        if($from_charset == $to_charset) {
+            $result = $str;
+        } elseif(is_fn("iconv")) {
             $result = iconv($from_charset, $to_charset, $str);
-        } elseif(check_function_exists("mb_convert_encoding")) {
+        } elseif(is_fn("mb_convert_encoding")) {
             $result = mb_convert_encoding($str, $to_charset, $from_charset);
         }
 
@@ -28,11 +59,11 @@ if(!check_function_exists("get_converted_string")) {
     }
 }
 
-if(!check_function_exists("nl2p")) {
-    function nl2p($string) {
-        $paragraphs = '';
-        foreach (explode("\n", $string) as $line) {
-            if (trim($line)) {
+if(!is_fn("nl2p")) {
+    function nl2p($str) {
+        $paragraphs = "";
+        foreach(explode_by_line($str) as $line) {
+            if(trim($line)) {
                 $paragraphs .= '<p>' . $line . '</p>';
             }
         }
@@ -40,31 +71,31 @@ if(!check_function_exists("nl2p")) {
     }
 }
 
-if(!check_function_exists("br2nl")) {
+if(!is_fn("br2nl")) {
     function br2nl($string) {
-        return preg_replace('/\<br(\s*)?\/?\>/i', "\n", $string); 
+        return preg_replace('/\<br(\s*)?\/?\>/i', DOC_EOL, $string); 
     }
 }
 
-if(!check_function_exists("br2p")) {
+if(!is_fn("br2p")) {
     function br2p($string) {
         return nl2p(br2nl($string));
     }
 }
 
-if(!check_function_exists("get_formatted_number")) {
+if(!is_fn("get_formatted_number")) {
     function get_formatted_number($value) {
         return number_format(floatval($value));
     }
 }
 
-if(!check_function_exists("get_cutted_string")) {
+if(!is_fn("get_cutted_string")) {
     function get_cutted_string($str, $start, $len=null, $charset="utf-8") {
         $result = "";
 
-        if(check_function_exists("iconv_substr")) {
+        if(is_fn("iconv_substr")) {
             $result = iconv_substr($str, $start, $len, $charset);
-        } elseif(check_function_exists("mb_substr")) {
+        } elseif(is_fn("mb_substr")) {
             $result = mb_substr($str, $start, $len, $charset);
         } else {
             $result = substr($str, $start, $len);
@@ -74,13 +105,13 @@ if(!check_function_exists("get_cutted_string")) {
     }
 }
 
-if(!check_function_exists("get_string_length")) {
+if(!is_fn("get_string_length")) {
     function get_string_length($str, $charset="utf-8") {
         $len = 0;
 
-        if(check_function_exists("iconv_strlen")) {
+        if(is_fn("iconv_strlen")) {
             $len = iconv_strlen($str, $charset);
-        } elseif(check_function_exists("mb_strlen")) {
+        } elseif(is_fn("mb_strlen")) {
             $len = mb_strlen($str, $charset);
         } else {
             $len = strlen($str);
@@ -90,7 +121,7 @@ if(!check_function_exists("get_string_length")) {
     }
 }
 
-if(!check_function_exists("get_splitted_strings")) {
+if(!is_fn("get_splitted_strings")) {
     function get_splitted_strings($str, $len=32, $chsarset="utf-8") {
         $strings = array();
 
@@ -114,39 +145,70 @@ if(!check_function_exists("get_splitted_strings")) {
     }
 }
 
-if(!check_function_exists("split_by_line")) {
-    function split_by_line($str) {
+if(!is_fn("explode_by_line")) {
+    function explode_by_line($str) {
         return preg_split('/\n|\r\n?/', $str);
     }
 }
 
-if(!check_function_exists("read_storage_file_by_line")) {
-    function read_storage_file_by_line($filename, $options=array()) {
-        return split_by_line(read_storage_file($filename, $options));
+// Deprecated: split_by_line()
+if(!is_fn("split_by_line")) {
+    function split_by_line($str) {
+        return explode_by_line($str);
     }
 }
 
-// https://stackoverflow.com/questions/834303/startswith-and-endswith-functions-in-php
-if(!check_function_exists("startsWith")) {
-    function startsWith($haystack, $needle) {
+if(!is_fn("explode_storage_file_by_line")) {
+    function explode_storage_file_by_line($filename, $options=array()) {
+        return explode_by_line(read_storage_file($filename, $options));
+    }
+}
+
+if(!is_fn("strlike")) {
+    function strlike($haystack, $needle) {
+        $flag = false;
+
+        $s = explode("%", $needle);
+        $d = count($s);
+        switch($d) {
+            case 3:
+                $flag = (strpos($haystack, $s[1]) !== false);
+                break;
+            case 2:
+                if($s[1] == "") {
+                    //$flag = (strpos($haystack, $s[0]) === 0);
+                    $flag = is_prefix($haystack, $s[0]);
+                } elseif($s[0] == "")  {
+                    //$flag = (strpos($haystack, $s[1]) !== false);
+                    $flag = is_suffix($haystack, $s[1]);
+                }
+                break;
+            default:
+                $flag = ($needle === $haystack);
+        }
+
+        return $flag;
+    }
+}
+
+if(!is_fn("is_prefix")) {
+    function is_prefix($haystack, $needle) {
         $length = strlen($needle);
         return (substr($haystack, 0, $length) === $needle);
     }
 }
 
-if(!check_function_exists("endsWith")) {
-    function endsWith($haystack, $needle) {
+if(!is_fn("is_suffix")) {
+    function is_suffix($haystack, $needle) {
         $length = strlen($needle);
         if($length == 0) {
             return true;
         }
-
         return (substr($haystack, -$length) === $needle);
     }
 }
 
-// https://stackoverflow.com/questions/4955433/php-multiple-delimiters-in-explode/27767665#27767665
-if(!check_function_exists("multi_explode")) {
+if(!is_fn("multi_explode")) {
     function multi_explode($delimiters, $string) {
         $ready = str_replace($delimiters, $delimiters[0], $string);
         $launch = explode($delimiters[0], $ready);
@@ -154,7 +216,7 @@ if(!check_function_exists("multi_explode")) {
     }
 }
 
-if(!check_function_exists("multi_strpos")) {
+if(!is_fn("multi_strpos")) {
     function multi_strpos($string, $delimiters, $offset=0) {
         $last_pos = strlen($string) - 1;
         $pos = $last_pos;
@@ -174,25 +236,7 @@ if(!check_function_exists("multi_strpos")) {
     }
 }
 
-if(!check_function_exists("multi_str_split")) {
-    function multi_str_split($string, $delimiters) {
-        $strings = array();
-
-        if(is_string($string)) {
-            $offset = 0;
-            $pos = -1;
-            while(!($pos !== false)) {
-                $offset = $pos + 1;
-                $pos = multi_strpos($string, $delimiters, $offset);
-                $strings[] = substr($string, $offset, $pos - $offset);
-            }
-        }
-
-        return $strings;
-    }
-}
-
-if(!check_function_exists("parse_pipelined_data")) {
+if(!is_fn("parse_pipelined_data")) {
     function parse_pipelined_data($pipelined_data, $keynames=array()) {
         $result = array();
         $parsed_data = explode("|", $pipelined_data);
@@ -212,7 +256,7 @@ if(!check_function_exists("parse_pipelined_data")) {
 }
 
 // https://stackoverflow.com/questions/10290849/how-to-remove-multiple-utf-8-bom-sequences
-if(!check_function_exists("remove_utf8_bom")) {
+if(!is_fn("remove_utf8_bom")) {
     function remove_utf8_bom($text) {
         $bom = pack('H*','EFBBBF');
         $text = preg_replace("/^$bom/", '', $text);
@@ -220,17 +264,17 @@ if(!check_function_exists("remove_utf8_bom")) {
     }
 }
 
-if(!check_function_exists("get_tokenized_text")) {
+if(!is_fn("get_tokenized_text")) {
     function get_tokenized_text($text, $delimiters=array()) {
         if(count($delimiters) > 0) {
-            return array_filter(multi_explode($delimiters, $text));
+            return array_values(array_filter(multi_explode($delimiters, $text)));
         } else {
             return preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
         }
     }
 }
 
-if(!check_function_exists("get_highlighted_html_by_words")) {
+if(!is_fn("get_highlighted_html_by_words")) {
     function get_highlighted_html_by_word($word, $text, $delimiters=array()) {
         $html = $text;
 
@@ -243,20 +287,20 @@ if(!check_function_exists("get_highlighted_html_by_words")) {
     }
 }
 
-if(!check_function_exists("get_floating_percentage")) {
-    function get_floating_percentage($x, $a=2) {
-        return round(floatval($x) / 100, floatval($a));
+if(!is_fn("get_floating_percentage")) {
+    function get_floating_percentage($x, $a=5) {
+        return round(floatval($x) / 100.0, $a);
     }
 }
 
-if(!check_function_exists("eregi_compatible")) {
-    function eregi_compatible($pattern, $subject, &$matches=NULL) {
+if(!is_fn("eregi")) {
+    function eregi($pattern, $subject, &$matches=NULL) {
         return preg_match(sprintf("/%s/i", $pattern), $subject, $matches);
     }
 }
 
-if(!check_function_exists("eregi_replace_compatible")) {
-    function eregi_replace_compatible($pattern, $replacement, $subject) {
+if(!is_fn("eregi_replace")) {
+    function eregi_replace($pattern, $replacement, $subject) {
         return preg_replace(sprintf("/%s/i", $pattern), $replacement, $subject);
     }
 }
