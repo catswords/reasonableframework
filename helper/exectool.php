@@ -1,7 +1,8 @@
 <?php
 /**
  * @file exectool.php
- * @date 2018-07-22
+ * @created_on 2018-07-22
+ * @updated_on 2020-07-10
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @forked from https://github.com/scipag/PHPUtilities
  * @brief ExecTool helper
@@ -133,7 +134,12 @@ if(!is_fn("exec_command")) {
             return $return;
         }
 
-        if ($method == "") {
+        // An 'async' option will be return PID
+        if(array_key_equals("async", $options, true)) {
+            $command = sprintf("%s 1>/dev/null 2>&1 & echo $!;", $command);
+        }
+
+        if (empty($method)) {
             // ob_start() will turn on output buffering to collect all output from
             // exec_test() and ob_end_clean() will clean the buffer afterwards ("garbage collection") 
             ob_start();
@@ -157,7 +163,6 @@ if(!is_fn("exec_command")) {
 
             case "exec":
                 exec($command, $output);
-                var_dump($output);  
                 break;
 
             case "shell_exec":
@@ -200,6 +205,11 @@ if(!is_fn("exec_command")) {
         }
 
         $return = ob_get_clean();
+
+        // PID is integer
+        if(array_key_equals("async", $options, true)) {
+            $return = intval(rtrim($return));
+        }
 
         return $return;
     }

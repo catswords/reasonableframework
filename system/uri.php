@@ -2,7 +2,7 @@
 /**
  * @file uri.php
  * @created_on 2018-04-13
- * @updated_on 2020-04-12
+ * @updated_on 2020-05-21
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief URI module
  */
@@ -103,6 +103,7 @@ if(!is_fn("read_requests")) {
             "_RAW"    => file_get_contents("php://input"),
             "_JSON"   => false,
             "_SEAL"   => false,
+            "_YAML"   => false,
             "_CSPT"   => false,
             "_SERVER" => array_map("make_safe_argument", get_array($_SERVER)),
         );
@@ -120,7 +121,7 @@ if(!is_fn("read_requests")) {
             }
         }
 
-        // check if `JSONData` request (referenced from NHBank API competition)
+        // check if `JSONData` request (referenced from `2018 NHBank-KISA-TheLoop API competition`)
         $jsondata = false;
         if(!array_key_empty("JSONData", $requests['_ALL'])) {
             $options['json'] = true;
@@ -138,6 +139,13 @@ if(!is_fn("read_requests")) {
             $requests['_SEAL'] = unserialize($requests['_RAW']);
         }
         
+        // check if yaml request
+        if(array_key_equals("yaml", $options, true)) {
+            if(is_fn("yaml_parse")) {
+                $requests['_YAML'] = yaml_parse($requests['_RAW']);
+            }
+        }
+
         // check if cspt(catsplit) request
         if(array_key_equals("catsplit", $options, true)) {
             if(loadHelper("catsplit.format")) {
@@ -322,17 +330,17 @@ if(!is_fn("get_requested_value")) {
             }
         }
 
-            if(is_string($value)) {
-                        // security: set escape quotes
-                        if($escape_quotes == true) {
-                                $value = addslashes($value);
-                        }
+        if(is_string($value)) {
+            // security: set escape quotes
+            if($escape_quotes == true) {
+                $value = addslashes($value);
+            }
 
-                        // security: set escape tags
-                        if($escape_tags == true) {
-                                $value = htmlspecialchars($value);
-                        }
-                }
+            // security: set escape tags
+            if($escape_tags == true) {
+                $value = htmlspecialchars($value);
+            }
+        }
 
         return $value;
     }
@@ -412,11 +420,5 @@ if(!is_fn("set_header_content_type")) {
         } else {
             header("Content-type: text/plain");
         }
-    }
-}
-
-if(!is_fn("get_requested_jsondata")) {
-    function get_requested_jsondata($name, $escape_quotes=true, $escape_tags=false) {
-        return get_requested_jsondata($name, "_JSON", $escape_quotes, $escape_tags);
     }
 }

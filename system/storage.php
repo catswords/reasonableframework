@@ -2,7 +2,7 @@
 /**
  * @file storage.php
  * @date 2018-05-27
- * @updated 2019-10-13
+ * @updated 2020-06-16
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief Stroage module for ReasonableFramework
  */
@@ -28,14 +28,13 @@ if(!is_fn("get_current_working_dir")) {
                 break;
             case "windows":
                 if(loadHelper("exectool")) {
-                    $exec_contents = implode("\r\n", array("@echo off", "SET var=%cd%", "ECHO %var%"));
+                    $exec_contents = implode("\r\n", array("@echo off", "ECHO %cd%"));
                     $exec_file = write_storage_file($exec_contents, array(
                         "filename" => "pwd.bat"
                     ));
                     $working_dir = exec_command($exec_file);
                 }
                 break;
-                
         }
 
         return $working_dir;
@@ -56,11 +55,11 @@ if(!is_fn("get_safe_path")) {
 
 if(!is_fn("get_storage_path")) {
     function get_storage_path($type="data") {
-        $dir_path = sprintf("./%s/%s", get_storage_dir(), get_safe_path($type));
+        $dir_path = sprintf("%s/%s/%s", get_current_working_dir(), get_storage_dir(), get_safe_path($type));
 
         if(!is_dir($dir_path)) {
             if(!@mkdir($dir_path, 0777)) {
-                set_error("can not create directory. " . $dir_path);
+                set_error("Could not create directory. " . $dir_path);
                 show_errors();
             }
         }
@@ -70,40 +69,29 @@ if(!is_fn("get_storage_path")) {
 
 if(!is_fn("get_storage_url")) {
     function get_storage_url($type="data") {
-        return sprintf("%s%s/%s", base_url(), get_storage_dir(), get_safe_path($type));
+        return sprintf("%s/%s/%s", base_url(), get_storage_dir(), get_safe_path($type));
     }
 }
 
-if(!is_fn("move_uploaded_file_to_storage")) {
-    function move_uploaded_file_to_stroage($options=array()) {
+if(!is_fn("allocate_uploaded_files")) {
+    function allocate_uploaded_files($options=array()) {
         $response = array(
             "files" => array()
         );
-
+        
+        $config = get_config();
         $requests = get_requests();
         $files = $requests['_FILES'];
 
         $storage_type = get_value_in_array("storage_type", $options, "data");
         $upload_base_path = get_storage_path($storage_type);
         $upload_base_url = get_storage_url($storage_type);
+        $upload_allow_ext = array();
 
-        if(!array_key_empty("only_image", $options)) {
-            $upload_allow_ext = array(
-                "png", "gif", "jpg", "jpeg", "tif"
-            );
-        } elseif(!array_key_empty("only_docs", $options)) {
-            $upload_allow_ext = array(
-                "png", "gif", "jpg", "jpeg", "tif",
-                "xls", "ppt", "doc", "xlsx", "pptx",
-                "docx", "odt", "odp", "ods", "xlsm",
-                "tiff", "pdf", "xlsm"
-            );
-        } elseif(!array_key_empty("only_audio", $options)) {
-            $upload_allow_ext = array(
-                "mp3", "ogg", "m4a", "wma", "wav"
-            );
-        } else {
-            $upload_allow_ext = array();
+        // storage/config/security.ini -> allowextensionsdisabled, allowextensions
+        $allow_extensions_disabled = get_value_in_array("allowextensionsdisabled", $config, 0);
+        if(empty($allow_extensions_disabled)) {
+            $allow_extensions = get_value_in_array("allowextensions", $config, $upload_allow_ext);
         }
 
         foreach($files as $k=>$file) {
@@ -345,6 +333,23 @@ if(!is_fn("write_storage_file")) {
             if($mode == "fake") {
                 $result = $upload_filename;
             } elseif($fhandle = fopen($upload_filename, $mode)) {
+                // if it is append, check the `rotate_size` option
+                if($mode == "a") {
+                    $rotate_size = intval(get_value_in_array("rotate_size", $options, 0));
+                    $rotate_ratio = floatval(get_value_in_array("rotate_ratio", $options, 0.9));
+                    $size_limit = floor($rotate_size * $rotate_ratio);
+                    if($rotate_size > 0) {
+                        if($rotate_size > filesize($upload_filename)) {
+                            if(loadHelper("exectool")) {
+                                exec_command(sprintf("tail -c %s '%s' > '%s'", $size_limit, $upload_filename, $upload_filename));
+                            } else {
+                                write_common_log("failed load exectool helper", "system/storage");
+                            }
+                        }
+                    }
+                }
+
+                // write a file
                 if(fwrite($fhandle, $data)) {
                     $result = $upload_filename;
                     if(!array_key_empty("chmod", $options)) {

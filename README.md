@@ -1,7 +1,6 @@
 # ReasonableFramework
-![Discord](https://img.shields.io/discord/359930650330923008.svg)
-![View Licence](https://img.shields.io/github/license/gnh1201/reasonableframework.svg)
-![Librapay](http://img.shields.io/liberapay/receives/catswords.svg?logo=liberapay)
+![License LGPLv3](https://img.shields.io/github/license/gnh1201/reasonableframework.svg)
+![KCC C-2020-018490](https://img.shields.io/static/v1?label=KCC&message=C-2020-018490&color=orange)
 
 - ReasonableFramework is `RVHM` structured PHP framework with common security
 - Prefix code: `RSF` (ReasonableFramework)
@@ -9,8 +8,8 @@
 
 ![This project open source licensed under LGPL version 3](https://github.com/gnh1201/reasonableframework/raw/master/lgplv3-147x51.png)
 
-## technical support (donate us)
-- [Technical support and improved web security for ReasonableFramework](https://catswords.re.kr/go/rsfsecurity) ($4/Monthly, pay on Patreon)
+## Security policy
+- [Security policy and techincal support](SECURITY.md)
 
 ## Specification
 - Database connection (via PDO, MySQLi (MySQL Improved), MySQL Tranditional, MySQL CLI, Oracle(OCI))
@@ -39,59 +38,71 @@
 2. set up database configuration: `/storage/config/database.ini.php`
 3. create new file: `/route/example.php`
 4. go to `http://[base_url]/?route=example` or `http://[base_url]/example/`(if set `.htaccess`) in your web browser.
-5. enjoy it.
+5. code it.
 
 ## Examples
+- [Send severities from Zabbix to Grafana](https://gist.github.com/gnh1201/792964e9719d2f62157cf46e394888f5)
 - [REST API Integration (Naver Papago Translation REST API)](https://gist.github.com/gnh1201/081484e6f5e10bd3be819093ba5f49c8)
 - [Payment Gateway Integration (KCP)](https://github.com/gnh1201/reasonableframework/blob/master/route/orderpay.pgkcp.php)
 
-## [NEW] Advanced security (only for sponsors)
+## Advanced security (only for sponsors)
 - CORS, CSRF, XSS, SQL-injection protection is common security, it is free and open-source for everyone.
 - Firewall, DDoS protection, and more security tools are available only for sponsors. [more](https://github.com/gnh1201/reasonableframework/blob/master/SECURITY.md)
 
-## [NEW] Remote Debugging (free for all)
-- Remote debugging feature based on [RFC3164(The BSD Syslog Protocol)](https://catswords.re.kr/go/rfc3164), with [Papertrail](https://catswords.re.kr/go/papertrail)
+## Remote logger (free for all)
+- Remote logger feature based on [RFC3164(The BSD Syslog Protocol)](https://catswords.re.kr/go/rfc3164), with [Papertrail](https://catswords.re.kr/go/papertrail)
 
 ## Compatible of free web hostings
 
 | Provider               | Pass?  | Tested version | Note
-| ---------------------- | ------ | -------------- | ------------- |
-| cafe24.com (Paid)      | Passed | v1.6.2         |               |
-| woobi.co.kr            | Passed | v1.6.2         |               |
-| dothome.co.kr          | Passed | v1.5           |               |
-| ivyro.net              | Passed | v1.5           |               |
-| 000webhost.com         | Warn   | v1.5           | Ad logo       |
-| freewebhostingarea.com | Passed | v1.5           |               |
-| infinityfree.net       | Warn   | v1.5           | anti-crawling |
-| freehosting.io         | Passed | v1.5           |               |
-| freehostingeu.com      | Warn   | v1.5           | CURL blocked  |
-| freehostingnoads.net   | Warn   | v1.5           | CURL blocked  |
-| awardspace.com         | Warn   | v1.5           | CURL blocked  |
+| ---------------------- | ------ | -------------- | -------------------------- |
+| [vultr.com](https://catswords.re.kr/go/vultr) (Vultr Holdings Co.)       | :heavy_check_mark: Passed | v1.6.5.2       | Paid, Pre-configured LAMP server |
+| cafe24.com (Cafe24 Inc.)      | :heavy_check_mark: Passed | v1.6.2         | Paid                           |
+| woobi.co.kr (MyCGI)            | :heavy_check_mark: Passed | v1.6.2         |                            |
+| dothome.co.kr (Anysecure Inc.)         | :heavy_check_mark: Passed | v1.5           |                            |
+| ivyro.net (Smileserv Inc.)            | :heavy_check_mark: Passed | v1.5           |                            |
+| 000webhost.com         | :warning: Warn   | v1.5           | Advertising logo           |
+| freewebhostingarea.com | :heavy_check_mark: Passed | v1.5           |                            |
+| infinityfree.net       | :warning: Warn   | v1.5           | Anti-crawling              |
+| freehosting.io         | :heavy_check_mark: Passed | v1.5           |                            |
+| freehostingeu.com      | :warning: Warn   | v1.5           | CURL blocked               |
+| freehostingnoads.net   | :warning: Warn   | v1.5           | CURL blocked               |
+| awardspace.com         | :warning: Warn   | v1.5           | CURL blocked               |
 
 ## How to use CLI (Command line interface)
 ```
 $ php cli.php --route [route name] --session-id [session ID]
 ```
 
+## Administratives
+- This project was registered to the Korea Copyright Commission's software copyright registration system. the registration number is `C-2020-018490`(version: v1.6.5.1-kcc) and approved in June 3, 2020.
+- The open source license applied to this project will remain the same now and in the future.
+
 ## 한국어(Korean)
-- **리즈너블(이유있는) 프레임워크**는 거친 웹 개발 환경을 위해 설계된 PHP 프레임워크입니다.
-- **레거시 개발**이나 **과학기술연구** 등 특수 목적을 가진 개발에 특화된 설계로 높은 안정성과 보안을 제공합니다.
-- PHP를 기반으로 하는 무료 웹 호스팅에서도 원활하게 돌아가도록 지원합니다.
-- 객체지향, 모듈러(MVC), 시큐어 코딩 등 현대적인 웹 기술을 모르더라도 **더 견고한** 기준을 제공합니다.
-- 리즈너블 프레임워크는 CSRF, XSS, SQL 인젝션 등 기초적인 **보안 위협에 사전 대응**하도록 설계되어 있습니다.
-- PHP 버전 4 부터 버전 7까지 다양한 개인 및 기업 **적용 사례**를 보유하고 있습니다.
-- [카카오톡 채팅방](https://catswords.re.kr/go/kakaotalk)을 통해 실시간 버그 및 보안 이슈 해결이 가능합니다.
+- **리즈너블 프레임워크**는 한국의 웹 개발 환경에 적합한 PHP 프레임워크입니다.
+- 레거시 코드에 기반하거나 숙련되지 않은 개발자가 프로그램을 개발하여도 최대의 안정성을 제공합니다.
+- 한국, 아시아, 북미, 유럽권의 PHP를 기반으로 하는 무료 웹 호스팅에서도 안정적인 운영이 가능합니다.
+- 객체지향(OOP), 모듈러(MVC), 시큐어 코딩 등 현대적인 웹 기술을 모르더라도 **편리한 기준**을 제공합니다.
+    - Composer(패키지 관리자)를 포함한 별도의 개발 보조 도구, PHP 플러그인, PHP 프레임워크가 사용 불가능한 환경에 적합합니다.
+    - 한국에서 사용되는 각종 CMS와 API와 연동되어 한국 환경에서 사용 빈도가 높은 구현 유형을 작성하는데 적합합니다.
+    - RVHM 구조는 MVC 구조와 함께 사용하실 수 있으며, 기존 개발 스킬로도 사용할 수 있도록 더 유연한 구조를 가집니다.
+- **리즈너블 프레임워크**는 CSRF, XSS, SQL 인젝션 등 기초적인 **보안 위협에 대응**하도록 설계되어 있습니다.
+- 이 프로젝트는 PHP 버전 4 부터 버전 7까지 다양한 **기업 수준의 적용 사례**를 포함하고 있습니다.
+- 이 프로젝트는 [카카오톡 채팅방](https://catswords.re.kr/go/kakaotalk)에서 실시간으로 버그 및 보안 이슈를 제보받고 있습니다.
 
 ## English
-- **Reasonable Framework** is a PHP framework designed for rugged web development environments.
-- Designed for special purpose development such as **legacy development** or **science and technology research**, it provides high stability and security.
-- It also works smoothly on free web hosting based on PHP.
-- It provides a **stronger standard** even if you don't know modern web technologies, such as object-oriented, modular (MVC), and secure coding.
-- Resonable Framework is designed to **proactively respond to fundamental security threats** such as CSRF, XSS, and SQL injection.
-- We have **various enterprise cases** from PHP version 4(legacy) to 7(modern).
-- You can quickly resolve bugs and security issues in [our chatting room](https://catswords.re.kr/go/kakaotalk).
+- **ReasonableFramework** is a PHP framework designed to the restrictive web environments.
+- It provides maximum stability even if the program is developed for developers who are based on legacy code or are not skilled.
+- It also works smoothly on free web hosting (in South Korea, Asia, America, and Europe) based on PHP 4 and 7.
+- It provides **a convincing standard** even if you don't know modern web techs, such as object-oriented, modular(MVC), and secure coding.
+    - Ideal for environments where separate development aids, including Composer, PHP extensions, and the famous PHP framework are not available.
+    - Compatible with famous CMS and API used with REST API, it is suitable to create implementation type that is frequently used in various environment.
+    - RVHM structure can be used with MVC structure, and has more flexible structure to use as existing development skills.
+- **ResonableFramework** is designed to **respond to fundamental security threats** such as CSRF, XSS, and SQL injection.
+- This project including a lots of the **enterprise level cases** from PHP version 4(legacy) to 7(modern).
+- This project receiving a realtime reports that bugs and security issues in the [official chatting room](https://catswords.re.kr/go/kakaotalk).
 
 ## Contact us
 - gnh1201@gmail.com
 - support@exts.kr
-- catswords@protonmail (if you require confidential)
+- catswords@protonmail.com (if you require confidential)
